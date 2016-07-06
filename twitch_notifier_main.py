@@ -24,6 +24,10 @@ def parse_args():
                         type=int,
                         default=30
                         )
+    parser.add_argument("--all",
+                        help="Watch all followed streams, not just ones with notifications enabled",
+                        default=False,
+                        action="store_true")
     return parser.parse_args()
 
 
@@ -56,10 +60,11 @@ def main():
         channel_name = channel["display_name"]
 
         notifications_enabled = follow["notifications"]
+        if options.all or notifications_enabled:
 
-        channels_followed.add(channel_id)
-        channels_followed_names.append(channel_name)
-        channel_info[channel_id] = channel
+            channels_followed.add(channel_id)
+            channels_followed_names.append(channel_name)
+            channel_info[channel_id] = channel
 
     print "Watching: %s" % ", ".join(sorted(channels_followed_names))
 
