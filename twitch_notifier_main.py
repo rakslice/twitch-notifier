@@ -9,7 +9,7 @@ import twitch.queries
 import twitch.api.v3
 
 import windows_10_toast_notifications
-
+import windows_lock_check
 
 DEBUG_OUTPUT = False
 
@@ -28,6 +28,15 @@ def parse_args():
                         help="Watch all followed streams, not just ones with notifications enabled",
                         default=False,
                         action="store_true")
+    parser.add_argument("--idle",
+                        help="idle time threshold to consider locked (seconds)",
+                        type=int,
+                        default=300)
+    parser.add_argument("--no-unlock-notify",
+                        dest="unlock_notify",
+                        help="Don't notify again on unlock",
+                        default=True,
+                        action="store_false")
     return parser.parse_args()
 
 
@@ -72,6 +81,19 @@ def main():
 
     # Poll for twitch
     while True:
+        locked = windows_lock_check.check_if_locked()
+        idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
+        if DEBUG_OUTPUT:
+            print "locked: %s idle: %s" % (locked, idle)
+        if locked or idle:
+            print "Locked, waiting for unlock"
+            while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
+                time.sleep(5)
+            if options.unlock_notify:
+                if DEBUG_OUTPUT:
+                    print "Clearing last streams to renotify"
+                last_streams = {}
+
         if DEBUG_OUTPUT:
             print "Checking for follow stream changes"
         for channel_id in channels_followed:
