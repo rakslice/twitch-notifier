@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument("--poll",
                         help="poll interval",
                         type=int,
-                        default=30
+                        default=60
                         )
     parser.add_argument("--all",
                         help="Watch all followed streams, not just ones with notifications enabled",
@@ -105,7 +105,7 @@ def main():
 
         if DEBUG_OUTPUT:
             print "Waiting %s s for next poll" % options.poll
-        time.sleep(options.poll)
+        time.sleep(max(options.poll, 60))
 
 
 if __name__ == "__main__":
