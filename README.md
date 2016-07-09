@@ -17,7 +17,7 @@ Run `twitch_notifier_main.py` and pass it at least the username to watch the fol
 
 ## Options
 
-    c:\Python27\python.exe twitch_notifier_main.py --username {username} [--poll {interval}] [--all]
+    c:\Python27\python.exe twitch_notifier_main.py --username USERNAME [--poll INTERVAL] [--idle INTERVAL] [--all] [--no-unlock-notify]
 
     --user USERNAME  - Twitch user to watch followed users of
     --poll INTERVAL  - Time between polls in seconds; can't go lower than 60
