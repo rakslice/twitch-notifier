@@ -1,5 +1,6 @@
 import argparse
 import calendar
+import os
 import time
 import webbrowser
 
@@ -9,9 +10,13 @@ import twitch.queries
 import twitch.api.v3
 
 import windows_10_toast_notifications
-import windows_lock_check
+from tests.one_offs import windows_lock_check
 
 DEBUG_OUTPUT = False
+
+
+script_path = os.path.dirname(os.path.abspath(__file__))
+assets_path = os.path.join(script_path, "assets")
 
 
 def parse_args():
@@ -77,57 +82,62 @@ def main():
 
     print "Watching: %s" % ", ".join(sorted(channels_followed_names))
 
-    windows_balloon_tip_obj = windows_10_toast_notifications.WindowsBalloonTip()
+    windows_balloon_tip_obj = windows_10_toast_notifications.WindowsBalloonTip(window_title="twitch-notifier",
+                                                                               icon_filename=os.path.join(assets_path, "icon.ico")
+                                                                               )
+    try:
+        # Poll for twitch
+        while True:
+            locked = windows_lock_check.check_if_locked()
+            idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
+            if DEBUG_OUTPUT:
+                print "locked: %s idle: %s" % (locked, idle)
+            if locked or idle:
+                print "Locked, waiting for unlock"
+                while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
+                    time.sleep(5)
+                if options.unlock_notify:
+                    if DEBUG_OUTPUT:
+                        print "Clearing last streams to renotify"
+                    last_streams = {}
 
-    # Poll for twitch
-    while True:
-        locked = windows_lock_check.check_if_locked()
-        idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
-        if DEBUG_OUTPUT:
-            print "locked: %s idle: %s" % (locked, idle)
-        if locked or idle:
-            print "Locked, waiting for unlock"
-            while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
-                time.sleep(5)
-            if options.unlock_notify:
-                if DEBUG_OUTPUT:
-                    print "Clearing last streams to renotify"
-                last_streams = {}
+            if DEBUG_OUTPUT:
+                print "Checking for follow stream changes"
+            for channel_id in channels_followed:
 
-        if DEBUG_OUTPUT:
-            print "Checking for follow stream changes"
-        for channel_id in channels_followed:
+                channel_name = channel_info[channel_id]["display_name"]
+                response = twitch.api.v3.streams.by_channel(channel_name)
 
-            channel_name = channel_info[channel_id]["display_name"]
-            response = twitch.api.v3.streams.by_channel(channel_name)
+                stream = response["stream"]
 
-            stream = response["stream"]
+                if stream is not None and not stream["is_playlist"]:
+                    stream_id = stream["_id"]
+                    if last_streams.get(channel_id) != stream_id:
+                        start_time = calendar.timegm(time.strptime(stream["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
+                        elapsed_s = time.time() - start_time
 
-            if stream is not None and not stream["is_playlist"]:
-                stream_id = stream["_id"]
-                if last_streams.get(channel_id) != stream_id:
-                    start_time = calendar.timegm(time.strptime(stream["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
-                    elapsed_s = time.time() - start_time
+                        game = stream["game"]
+                        stream_browser_link = stream["channel"]["url"]
 
-                    game = stream["game"]
-                    stream_browser_link = stream["channel"]["url"]
+                        message = u"%s is now live with %s (up %s)" % (channel_name, game, time_desc(elapsed_s))
 
-                    message = u"%s is now live with %s (up %s)" % (channel_name, game, time_desc(elapsed_s))
+                        def callback():
+                            print "notification for %s clicked" % channel_name
+                            webbrowser.open(stream_browser_link)
 
-                    def callback():
-                        print "notification for %s clicked" % channel_name
-                        webbrowser.open(stream_browser_link)
+                        windows_balloon_tip_obj.balloon_tip("twitch-notifier", message.encode("utf-8"),
+                                                            callback=callback)
 
-                    windows_balloon_tip_obj.balloon_tip("twitch-notifier", message.encode("utf-8"),
-                                                        callback=callback)
+                    last_streams[channel_id] = stream_id
+                else:
+                    last_streams[channel_id] = None
 
-                last_streams[channel_id] = stream_id
-            else:
-                last_streams[channel_id] = None
-
-        if DEBUG_OUTPUT:
-            print "Waiting %s s for next poll" % options.poll
-        time.sleep(max(options.poll, 60))
+            if DEBUG_OUTPUT:
+                print "Waiting %s s for next poll" % options.poll
+            time.sleep(max(options.poll, 60))
+    except (KeyboardInterrupt, Exception):
+        windows_balloon_tip_obj.close()
+        raise
 
 
 if __name__ == "__main__":
