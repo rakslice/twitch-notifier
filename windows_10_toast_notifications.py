@@ -91,16 +91,23 @@ class WindowsBalloonTip:
                 win32con.LR_DEFAULTSIZE |   # default metrics based on the type (IMAGE_ICON, 32x32)
                 win32con.LR_SHARED         # let the system release the handle when it's no longer used
             )
-            self.message_icon_flags = NIIF_USER
         else:
             hicon = LoadIcon(0, win32con.IDI_APPLICATION)
-            self.message_icon_flags = NIIF_INFO
 
         assert hicon
         self.log(hicon)
 
+        # Let's choose appropriate dwInfoFlags for when we're showing the message to determine the icon that will appear in the notification box
+        if icon_filename is not None:
+            # also use the custom icon for the message
+            self.message_icon_flags = NIIF_USER
+        else:
+            # info icon
+            self.message_icon_flags = NIIF_INFO
+
         self.basic_flags = NIF_ICON | NIF_MESSAGE | NIF_TIP
         nid = (hwnd, 0, self.basic_flags, OUR_NOTIFICATION_WM, hicon, self.window_title)
+        """ NOTIFYICONDATA structure: https://msdn.microsoft.com/en-us/library/windows/desktop/bb773352(v=vs.85).aspx """
 
         self.log("NIM_ADD")
         Shell_NotifyIcon(NIM_ADD, nid)
@@ -122,11 +129,10 @@ class WindowsBalloonTip:
         hicon = self.hicon
         self.log("hwnd: %r" % hwnd)
 
-        nid = self.nid
-        self.log(nid)
-
         assert self.message_icon_flags is not None
-        Shell_NotifyIcon(NIM_MODIFY, (hwnd, 0, NIF_INFO, OUR_NOTIFICATION_WM, hicon, 'Balloon Tooltip', msg, 200, title, self.message_icon_flags))
+        # NOTIFYICONDATA structure: https://msdn.microsoft.com/en-us/library/windows/desktop/bb773352(v=vs.85).aspx
+        new_nid = (hwnd, 0, NIF_INFO, OUR_NOTIFICATION_WM, hicon, 'Balloon Tooltip', msg, 200, title, self.message_icon_flags)
+        Shell_NotifyIcon(NIM_MODIFY, new_nid)
 
         self.log("PumpMessages()")
         PumpMessages()  # Handle window messages in main loop until something calls PostQuitMessage
