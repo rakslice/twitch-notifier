@@ -1,11 +1,31 @@
 # twitch-notifier
 A quick python twitch notifier for Windows 10
 
-## Options
-    --user USERNAME  - Twitch user to watch followed users of
-    --poll INTERVAL  - Time interval between polls
-    --all            - Watch all followed streams, not just ones with notifications enabled
+## Install
 
+First you'll need [Python 2.7](https://www.python.org/downloads/release/python-2711/)
+
+Then, to install the required libraries, run
+
+    >c:\Python27\Scripts\pip.exe install -r requirements.txt
+
+on the included requirements.txt file
+
+## Usage
+
+Run `twitch_notifier_main.py` and pass it at least the username to watch the follows of.
+
+## Options
+
+    c:\Python27\python.exe twitch_notifier_main.py --username {username} [--poll {interval}] [--all]
+
+    --user USERNAME  - Twitch user to watch followed users of
+    --poll INTERVAL  - Time between polls in seconds; can't go lower than 60
+    --idle INTERVAL  - How much time in seconds without activity to go idle
+    --all            - Watch all followed streams, not just ones with notifications enabled
+    --no-unlock-notify   - Don't notify again on unlock and when we return from idle
+
+## Acknowledgments
 
 Windows 10 notifications based on [https://github.com/jithurjacob/Windows-10-Toast-Notifications](https://github.com/jithurjacob/Windows-10-Toast-Notifications),
 
