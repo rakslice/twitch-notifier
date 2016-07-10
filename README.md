@@ -17,13 +17,14 @@ Run `twitch_notifier_main.py` and pass it at least the username to watch the fol
 
 ## Options
 
-    c:\Python27\python.exe twitch_notifier_main.py --username USERNAME [--poll INTERVAL] [--idle INTERVAL] [--all] [--no-unlock-notify]
+    c:\Python27\python.exe twitch_notifier_main.py --username USERNAME [--poll INTERVAL] [--idle INTERVAL] [--all] [--no-unlock-notify] [--auth-oauth TOKEN]
 
     --user USERNAME  - Twitch user to watch followed users of
     --poll INTERVAL  - Time between polls in seconds; can't go lower than 60
     --idle INTERVAL  - How much time in seconds without activity to go idle
     --all            - Watch all followed streams, not just ones with notifications enabled
     --no-unlock-notify   - Don't notify again on unlock and when we return from idle
+    --auth-oauth TOKEN   - OAuth token to pass
 
 ## Acknowledgments
 
