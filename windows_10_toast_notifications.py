@@ -21,8 +21,16 @@ Based on https://github.com/jithurjacob/Windows-10-Toast-Notifications/blob/mast
 
 OUR_NOTIFICATION_WM = win32con.WM_USER + 20
 
+NIN_BALLOONSHOW = win32con.WM_USER + 2
+NIN_BALLOONHIDE = win32con.WM_USER + 3
+NIN_BALLOONTIMEOUT = win32con.WM_USER + 4
+NIN_BALLOONUSERCLICK = win32con.WM_USER + 5
 
-class WindowsBalloonTip:
+NIN_POPUPOPEN = 0x406
+NIN_POPUPCLOSE = 0x407
+
+
+class WindowsBalloonTip(object):
     def __init__(self, window_title="Taskbar", debug_output=False, icon_filename=None):
         self.debug_output = debug_output
 
@@ -54,27 +62,34 @@ class WindowsBalloonTip:
     def on_destroy(self, hwnd, msg, wparam, lparam):
         # nid = (hwnd, 0)
         # Shell_NotifyIcon(NIM_DELETE, nid)
-        self._pqm("on_destroy")
+        self._pqm("on_destroy()")
 
     def _pqm(self, source):
-        self.log("%s before PQM sleep(1)" % source)
+        self.log("_pqm(): before sleep() due to %s" % source)
         # rubber band
         time.sleep(0.25)
-        self.log("%s PostQuitMessage(0)" % source)
+        self.log("_pqm(): due to %s calling PostQuitMessage(0)" % source)
         PostQuitMessage(0)
 
     # noinspection PyUnusedLocal
     def on_notification_message(self, hwnd, msg, wparam, lparam):
         if self.debug_output:
-            self.log("shell notify event %r %r" % (wparam, lparam))
-        if lparam == 1029:
-            self.log("clicked")
+            self.log("shell notify custom event <wparam=%r lparam=%r>" % (wparam, lparam))
+
+        if lparam == NIN_BALLOONUSERCLICK:
+            assert msg == OUR_NOTIFICATION_WM
+            self.log("clicked - lparam NIN_BALLOONUSERCLICK")
             if self.last_callback is not None:
                 self.last_callback()
                 self.last_callback = None
-            self._pqm("1029")
-        elif lparam == 1028:
-            self._pqm("1028")
+            self._pqm("lparam NIN_BALLOONUSERCLICK")
+        elif lparam == NIN_BALLOONTIMEOUT:
+            self.log("closed through ui or due to timeout")
+            self._pqm("lparam NIN_BALLOONTIMEOUT")
+        elif lparam == NIN_POPUPOPEN:
+            self.log("NIN_POPUPOPEN")
+        elif lparam == NIN_POPUPCLOSE:
+            self.log("NIN_POPUPCLOSE")
 
     def init_window(self, window_title, icon_filename=None):
         assert window_title is not None
@@ -101,7 +116,7 @@ class WindowsBalloonTip:
             hicon = LoadIcon(0, win32con.IDI_APPLICATION)
 
         assert hicon
-        self.log(hicon)
+        self.log("hicon of loaded icon is %s" % hicon)
 
         # Let's choose appropriate dwInfoFlags for when we're showing the message to determine the icon that will appear in the notification box
         if icon_filename is not None:
@@ -115,7 +130,7 @@ class WindowsBalloonTip:
         nid = (hwnd, 0, self.basic_flags, OUR_NOTIFICATION_WM, hicon, self.window_title)
         """ NOTIFYICONDATA structure: https://msdn.microsoft.com/en-us/library/windows/desktop/bb773352(v=vs.85).aspx """
 
-        self.log("NIM_ADD")
+        self.log("init_window() calling NIM_ADD")
         Shell_NotifyIcon(NIM_ADD, nid)
 
         self.hwnd = hwnd
@@ -126,25 +141,28 @@ class WindowsBalloonTip:
 
     def log(self, msg):
         if self.debug_output:
-            print msg
+            print "%r: %s" % (self, msg)
+
+    def __repr__(self):
+        return "%s@0x%08X" % (self.__class__.__name__, id(self))
 
     def balloon_tip(self, title, msg, callback=None):
         self.last_callback = callback
 
         hwnd = self.hwnd
         hicon = self.hicon
-        self.log("hwnd: %r" % hwnd)
+        self.log("balloon_tip() using saved hwnd: %r" % hwnd)
 
         assert self.message_icon_flags is not None
         # NOTIFYICONDATA structure: https://msdn.microsoft.com/en-us/library/windows/desktop/bb773352(v=vs.85).aspx
-        new_nid = (hwnd, 0, NIF_INFO, OUR_NOTIFICATION_WM, hicon, self.window_title, msg, 200, title, self.message_icon_flags)
+        new_nid = (hwnd, 0, self.basic_flags | NIF_INFO, OUR_NOTIFICATION_WM, hicon, self.window_title, msg, 200, title, self.message_icon_flags)
         Shell_NotifyIcon(NIM_MODIFY, new_nid)
 
-        self.log("PumpMessages()")
+        self.log("balloon_tip() calling PumpMessages()")
         PumpMessages()  # Handle window messages in main loop until something calls PostQuitMessage
 
     def close(self):
         nid = self.nid
 
-        self.log("NIM_DELETE")
+        self.log("close() calling NIM_DELETE")
         Shell_NotifyIcon(NIM_DELETE, nid)
