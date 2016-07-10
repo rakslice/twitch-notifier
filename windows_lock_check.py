@@ -15,8 +15,8 @@ DESKTOP_SWITCHDESKTOP = 0x0100
 def check_if_locked():
     h_desktop = OpenDesktop("default", 0, False, DESKTOP_SWITCHDESKTOP)
     result = SwitchDesktop(h_desktop)
-    if h_desktop:
-        CloseDesktop(h_desktop)
+    # if h_desktop:
+    #     CloseDesktop(h_desktop)
     if result:
         return False
     else:
