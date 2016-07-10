@@ -10,7 +10,7 @@ import twitch.queries
 import twitch.api.v3
 
 import windows_10_toast_notifications
-from tests.one_offs import windows_lock_check
+import windows_lock_check
 
 DEBUG_OUTPUT = False
 
