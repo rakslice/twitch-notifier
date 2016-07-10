@@ -1,5 +1,7 @@
 import sys
 
+import time
+
 import windows_10_toast_notifications
 
 
@@ -12,6 +14,7 @@ def main():
         text = "this is notification %s" % i
         title = "test multiple notifications %s" % i
         notifier.balloon_tip(title, text)
+        time.sleep(0.1)
 
     pause()
 
