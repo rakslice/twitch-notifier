@@ -52,8 +52,8 @@ class WindowsBalloonTip:
 
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def on_destroy(self, hwnd, msg, wparam, lparam):
-        nid = (hwnd, 0)
-        Shell_NotifyIcon(NIM_DELETE, nid)
+        # nid = (hwnd, 0)
+        # Shell_NotifyIcon(NIM_DELETE, nid)
         PostQuitMessage(0)
 
     # noinspection PyUnusedLocal
