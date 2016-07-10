@@ -21,8 +21,6 @@ Based on https://github.com/jithurjacob/Windows-10-Toast-Notifications/blob/mast
 
 OUR_NOTIFICATION_WM = win32con.WM_USER + 20
 
-DEBUG = False
-
 
 class WindowsBalloonTip:
     def __init__(self, window_title="Taskbar", debug_output=False, icon_filename=None):
@@ -67,11 +65,10 @@ class WindowsBalloonTip:
 
     # noinspection PyUnusedLocal
     def on_notification_message(self, hwnd, msg, wparam, lparam):
-        if DEBUG:
-            print "shell notify event %r %r" % (wparam, lparam)
+        if self.debug_output:
+            self.log("shell notify event %r %r" % (wparam, lparam))
         if lparam == 1029:
-            if DEBUG:
-                print "clicked"
+            self.log("clicked")
             if self.last_callback is not None:
                 self.last_callback()
                 self.last_callback = None

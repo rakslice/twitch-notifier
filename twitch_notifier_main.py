@@ -42,6 +42,10 @@ def parse_args():
                         help="Don't notify again on unlock",
                         default=True,
                         action="store_false")
+    parser.add_argument("--debug",
+                        dest="debug_output",
+                        default=False,
+                        action="store_true")
     return parser.parse_args()
 
 
@@ -83,7 +87,8 @@ def main():
     print "Watching: %s" % ", ".join(sorted(channels_followed_names))
 
     windows_balloon_tip_obj = windows_10_toast_notifications.WindowsBalloonTip(window_title="twitch-notifier",
-                                                                               icon_filename=os.path.join(assets_path, "icon.ico")
+                                                                               icon_filename=os.path.join(assets_path, "icon.ico"),
+                                                                               debug_output=options.debug_output
                                                                                )
     try:
         # Poll for twitch
