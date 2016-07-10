@@ -137,7 +137,7 @@ class WindowsBalloonTip:
 
         assert self.message_icon_flags is not None
         # NOTIFYICONDATA structure: https://msdn.microsoft.com/en-us/library/windows/desktop/bb773352(v=vs.85).aspx
-        new_nid = (hwnd, 0, NIF_INFO, OUR_NOTIFICATION_WM, hicon, 'Balloon Tooltip', msg, 200, title, self.message_icon_flags)
+        new_nid = (hwnd, 0, NIF_INFO, OUR_NOTIFICATION_WM, hicon, self.window_title, msg, 200, title, self.message_icon_flags)
         Shell_NotifyIcon(NIM_MODIFY, new_nid)
 
         self.log("PumpMessages()")
