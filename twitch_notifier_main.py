@@ -95,7 +95,7 @@ def get_streams_channels_iterating(channels_followed, channel_info):
         if stream is not None:
             updated_channel = stream['channel']
         else:
-            updated_channel = None
+            updated_channel = original_channel
         yield channel_id, updated_channel, stream
 
 
