@@ -54,6 +54,12 @@ class WindowsBalloonTip:
     def on_destroy(self, hwnd, msg, wparam, lparam):
         # nid = (hwnd, 0)
         # Shell_NotifyIcon(NIM_DELETE, nid)
+        self._pqm("on_destroy")
+
+    def _pqm(self, source):
+        self.log("%s before PQM sleep(1)" % source)
+        # rubber band
+        self.log("%s PostQuitMessage(0)" % source)
         PostQuitMessage(0)
 
     # noinspection PyUnusedLocal
@@ -66,9 +72,9 @@ class WindowsBalloonTip:
             if self.last_callback is not None:
                 self.last_callback()
                 self.last_callback = None
-            PostQuitMessage(0)
+            self._pqm("1029")
         elif lparam == 1028:
-            PostQuitMessage(0)
+            self._pqm("1028")
 
     def init_window(self, window_title, icon_filename=None):
         assert window_title is not None
