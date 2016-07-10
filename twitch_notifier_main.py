@@ -99,9 +99,10 @@ def get_streams_channels_iterating(channels_followed, channel_info):
         yield channel_id, updated_channel, stream
 
 
-def get_streams_channels_following():
+def get_streams_channels_following(followed_channels):
     """
     Get live streams for followed channels. Efficient because it's a single query but requires auth
+    :param followed_channels: set of ids of channels that we've followed
     :return: generator that yields (channel_id, channel, stream) for each stream
     """
     query = twitch_streams_followed(STREAM_TYPE_LIVE)
@@ -109,7 +110,11 @@ def get_streams_channels_following():
     for stream in response['streams']:
         channel = stream['channel']
 
-        yield channel['_id'], channel, stream
+        channel_id = channel['_id']
+        if channel_id not in followed_channels:
+            # skip channels that are here because they're being hosted by another channel
+            continue
+        yield channel_id, channel, stream
 
 
 class TwitchNotifierMain(object):
@@ -204,7 +209,7 @@ class TwitchNotifierMain(object):
                     print "Checking for follow stream changes"
 
                 if self.use_fast_query:
-                    channel_stream_iterator = get_streams_channels_following()
+                    channel_stream_iterator = get_streams_channels_following(channel_info.viewkeys())
                 else:
                     channel_stream_iterator = get_streams_channels_iterating(channels_followed, channel_info)
 
