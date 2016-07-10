@@ -1,4 +1,6 @@
 from win32gui import *
+
+import time
 import win32con
 
 NIIF_USER = 0x4
@@ -59,6 +61,7 @@ class WindowsBalloonTip:
     def _pqm(self, source):
         self.log("%s before PQM sleep(1)" % source)
         # rubber band
+        time.sleep(0.25)
         self.log("%s PostQuitMessage(0)" % source)
         PostQuitMessage(0)
 
