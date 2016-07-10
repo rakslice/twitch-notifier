@@ -14,8 +14,6 @@ import twitch.keys
 import windows_10_toast_notifications
 import windows_lock_check
 
-DEBUG_OUTPUT = False
-
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 assets_path = os.path.join(script_path, "assets")
@@ -76,45 +74,6 @@ def twitch_streams_followed(stream_type, limit=25, offset=0):
     q.add_param(twitch.keys.OFFSET, offset, 0)
     q.add_param('stream_type', stream_type)
     return q
-
-
-def get_streams_channels_iterating(channels_followed, channel_info):
-    """
-    Get streams by iterating through the channels we're following. More queries but requires no special auth (as of 2016-07-09)
-    :param channels_followed: list of ids of channels we're following
-    :param channel_info: dict of channel_id -> previously loaded channel dict
-    :return: generator that yields (channel_id, channel, stream) for each stream
-    """
-    for channel_id in channels_followed:
-        original_channel = channel_info[channel_id]
-        channel_name = original_channel["display_name"]
-
-        response = twitch.api.v3.streams.by_channel(channel_name)
-
-        stream = response["stream"]
-        if stream is not None:
-            updated_channel = stream['channel']
-        else:
-            updated_channel = original_channel
-        yield channel_id, updated_channel, stream
-
-
-def get_streams_channels_following(followed_channels):
-    """
-    Get live streams for followed channels. Efficient because it's a single query but requires auth
-    :param followed_channels: set of ids of channels that we've followed
-    :return: generator that yields (channel_id, channel, stream) for each stream
-    """
-    query = twitch_streams_followed(STREAM_TYPE_LIVE)
-    response = query.execute()
-    for stream in response['streams']:
-        channel = stream['channel']
-
-        channel_id = channel['_id']
-        if channel_id not in followed_channels:
-            # skip channels that are here because they're being hosted by another channel
-            continue
-        yield channel_id, channel, stream
 
 
 class TwitchNotifierMain(object):
@@ -194,24 +153,21 @@ class TwitchNotifierMain(object):
             while True:
                 locked = windows_lock_check.check_if_locked()
                 idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
-                if DEBUG_OUTPUT:
-                    print "locked: %s idle: %s" % (locked, idle)
+                self.log("locked: %s idle: %s" % (locked, idle))
                 if locked or idle:
-                    print "Locked, waiting for unlock"
+                    self.log("Locked, waiting for unlock")
                     while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
                         time.sleep(5)
                     if options.unlock_notify:
-                        if DEBUG_OUTPUT:
-                            print "Clearing last streams to renotify"
+                        self.log("Clearing last streams to renotify")
                         last_streams = {}
 
-                if DEBUG_OUTPUT:
-                    print "Checking for follow stream changes"
+                self.log("Checking for follow stream changes")
 
                 if self.use_fast_query:
-                    channel_stream_iterator = get_streams_channels_following(channel_info.viewkeys())
+                    channel_stream_iterator = self.get_streams_channels_following(channel_info.viewkeys())
                 else:
-                    channel_stream_iterator = get_streams_channels_iterating(channels_followed, channel_info)
+                    channel_stream_iterator = self.get_streams_channels_iterating(channel_info, channels_followed)
 
                 for channel_id, channel, stream in channel_stream_iterator:
                     channel_name = channel["display_name"]
@@ -224,12 +180,55 @@ class TwitchNotifierMain(object):
                     else:
                         last_streams[channel_id] = None
 
-                if DEBUG_OUTPUT:
-                    print "Waiting %s s for next poll" % options.poll
+                self.log("Waiting %s s for next poll" % options.poll)
                 time.sleep(max(options.poll, 60))
         except (KeyboardInterrupt, Exception):
             self._notifier_fini()
             raise
+
+    def log(self, msg):
+        if self.options.debug_output:
+            print "TwitchNotifierMain: %s" % msg
+
+    def get_streams_channels_iterating(self, channel_info, channels_followed):
+        """
+        Get streams by iterating through the channels we're following. More queries but requires no special auth (as of 2016-07-09)
+        :param channels_followed: list of ids of channels we're following
+        :param channel_info: dict of channel_id -> previously loaded channel dict
+        :return: generator that yields (channel_id, channel, stream) for each stream
+        """
+        for channel_id in channels_followed:
+            original_channel = channel_info[channel_id]
+            channel_name = original_channel["display_name"]
+
+            self.log("twitch.api.v3.streams.by_channel(%r)" % channel_name)
+            response = twitch.api.v3.streams.by_channel(channel_name)
+
+            stream = response["stream"]
+            if stream is not None:
+                updated_channel = stream['channel']
+            else:
+                updated_channel = original_channel
+            yield channel_id, updated_channel, stream
+
+    def get_streams_channels_following(self, followed_channels):
+        """
+        Get live streams for followed channels. Efficient because it's a single query but requires auth
+        :param followed_channels: set of ids of channels that we've followed
+        :return: generator that yields (channel_id, channel, stream) for each stream
+        """
+
+        self.log("twitch streams/followed(live)")
+        query = twitch_streams_followed(STREAM_TYPE_LIVE)
+        response = query.execute()
+        for stream in response['streams']:
+            channel = stream['channel']
+
+            channel_id = channel['_id']
+            if channel_id not in followed_channels:
+                # skip channels that are here because they're being hosted by another channel
+                continue
+            yield channel_id, channel, stream
 
 
 def main():
