@@ -133,6 +133,8 @@ class TwitchNotifierMain(object):
             self.use_fast_query = True
 
         for follow in result["follows"]:
+        notifications_disabled_for = []
+
             channel = follow["channel"]
             channel_id = channel["_id"]
             channel_name = channel["display_name"]
@@ -144,7 +146,13 @@ class TwitchNotifierMain(object):
                 channels_followed_names.append(channel_name)
                 channel_info[channel_id] = channel
 
+            else:
+
+                notifications_disabled_for.append(channel_name)
+
         print "Watching: %s" % ", ".join(sorted(channels_followed_names))
+        if len(notifications_disabled_for) > 0:
+            print "Notifications disabled for: %s" % ", ".join(sorted(notifications_disabled_for))
 
         # loop
 
