@@ -76,6 +76,19 @@ def twitch_streams_followed(stream_type, limit=25, offset=0):
     return q
 
 
+def paged_query_iterator(func_to_page, results_list_key, page_size=25, **kwargs):
+    cur_offset = 0
+    while True:
+        result_dict = func_to_page(limit=page_size, offset=cur_offset, **kwargs)
+        total = result_dict["_total"]
+        results_list_entries = result_dict[results_list_key]
+        for entry in results_list_entries:
+            yield entry
+        if cur_offset + page_size >= total:
+            break
+        cur_offset += page_size
+
+
 class TwitchNotifierMain(object):
     def __init__(self, options):
         self.options = options
@@ -116,8 +129,6 @@ class TwitchNotifierMain(object):
 
         self._init_notifier()
 
-        result = twitch.api.v3.follows.by_user(username)
-
         channels_followed = set()
         channel_info = {}
         last_streams = {}
@@ -132,9 +143,9 @@ class TwitchNotifierMain(object):
             twitch.queries._v3_headers["Authorization"] = authorization
             self.use_fast_query = True
 
-        for follow in result["follows"]:
         notifications_disabled_for = []
 
+        for follow in paged_query_iterator(twitch.api.v3.follows.by_user, name=username, results_list_key='follows'):
             channel = follow["channel"]
             channel_id = channel["_id"]
             channel_name = channel["display_name"]
