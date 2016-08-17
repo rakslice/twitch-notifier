@@ -197,6 +197,10 @@ class TwitchNotifierMain(object):
 
                         last_streams[channel_id] = stream_id
                     else:
+                        if stream is None:
+                            self.log("channel_id %r had stream None" % channel_id)
+                        else:
+                            self.log("channel_id %r is_playlist %r" % (channel_id, stream["is_playlist"]))
                         last_streams[channel_id] = None
 
                 self.log("Waiting %s s for next poll" % options.poll)
@@ -246,6 +250,7 @@ class TwitchNotifierMain(object):
             channel_id = channel['_id']
             if channel_id not in followed_channels:
                 # skip channels that are here because they're being hosted by another channel
+                self.log("skipping channel_id %r because it's not a followed channel" % channel_id)
                 continue
             yield channel_id, channel, stream
 
