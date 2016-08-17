@@ -120,6 +120,8 @@ class TwitchNotifierMain(object):
             print "notification for %s clicked" % channel_name
             webbrowser.open(stream_browser_link)
 
+        self.log("Showing message: '%s'" % message.encode("utf-8"))
+
         self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message.encode("utf-8"),
                                                  callback=callback)
 
@@ -161,7 +163,14 @@ class TwitchNotifierMain(object):
 
                 notifications_disabled_for.append(channel_name)
 
-        print "Watching: %s" % ", ".join(sorted(channels_followed_names))
+        followed_channel_entries = []
+
+        for channel_id in channels_followed:
+            followed_channel_entries.append(channel_info[channel_id])
+
+        followed_channel_entries.sort(key=lambda ch: ch["display_name"])
+
+        print "Watching: %s" % ", ".join(["%(display_name)s (%(_id)s)" % x for x in followed_channel_entries])
         if len(notifications_disabled_for) > 0:
             print "Notifications disabled for: %s" % ", ".join(sorted(notifications_disabled_for))
 
