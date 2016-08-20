@@ -122,7 +122,7 @@ class TwitchNotifierMain(object):
 
         self.log("Showing message: '%s'" % message.encode("utf-8"))
 
-        self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message.encode("utf-8"),
+        self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message,
                                                  callback=callback)
 
     def main_loop(self):
