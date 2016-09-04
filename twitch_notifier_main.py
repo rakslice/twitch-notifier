@@ -114,7 +114,12 @@ class TwitchNotifierMain(object):
         game = stream["game"]
         stream_browser_link = stream["channel"]["url"]
 
-        message = u"%s is now live with %s (up %s)" % (channel_name, game, time_desc(elapsed_s))
+        if game is None:
+            show_info = ""
+        else:
+            show_info = u"with %s" % stream["game"]
+
+        message = u"%s is now live %s(up %s)" % (channel_name, show_info, time_desc(elapsed_s))
 
         def callback():
             print "notification for %s clicked" % channel_name
