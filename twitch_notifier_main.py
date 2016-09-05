@@ -117,7 +117,7 @@ class TwitchNotifierMain(object):
         if game is None:
             show_info = ""
         else:
-            show_info = u"with %s" % stream["game"]
+            show_info = u"with %s " % stream["game"]
 
         message = u"%s is now live %s(up %s)" % (channel_name, show_info, time_desc(elapsed_s))
 
