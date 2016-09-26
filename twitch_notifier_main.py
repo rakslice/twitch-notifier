@@ -50,6 +50,8 @@ def parse_args():
                         dest="authorization_oauth",
                         help="Authorization OAuth header value to send",
                         )
+    parser.add_argument("--ui",
+                        help="Use the wxpython UI")
     return parser.parse_args()
 
 
@@ -131,6 +133,10 @@ class TwitchNotifierMain(object):
                                                  callback=callback)
 
     def main_loop(self):
+        for sleep_time, sleep_reason in self.main_loop_yielder():
+            time.sleep(sleep_time)
+
+    def main_loop_yielder(self):
         options = self.options
         username = options.username
 
@@ -175,7 +181,9 @@ class TwitchNotifierMain(object):
 
         followed_channel_entries.sort(key=lambda ch: ch["display_name"])
 
-        print "Watching: %s" % ", ".join(["%(display_name)s (%(_id)s)" % x for x in followed_channel_entries])
+        self.init_channel_display(followed_channel_entries)
+
+        print "Watching: %s" % ", ".join([self.channel_display_name(x) for x in followed_channel_entries])
         if len(notifications_disabled_for) > 0:
             print "Notifications disabled for: %s" % ", ".join(sorted(notifications_disabled_for))
 
@@ -190,7 +198,7 @@ class TwitchNotifierMain(object):
                 if locked or idle:
                     self.log("Locked, waiting for unlock")
                     while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
-                        time.sleep(5)
+                        yield 5, "waiting for unlock"
                     if options.unlock_notify:
                         self.log("Clearing last streams to renotify")
                         last_streams = {}
@@ -204,7 +212,12 @@ class TwitchNotifierMain(object):
 
                 for channel_id, channel, stream in channel_stream_iterator:
                     channel_name = channel["display_name"]
-                    if stream is not None and not stream["is_playlist"]:
+
+                    stream_we_consider_online = stream is not None and not stream["is_playlist"]
+
+                    self.stream_state_change(channel_id, stream_we_consider_online, stream)
+
+                    if stream_we_consider_online:
                         stream_id = stream["_id"]
                         if last_streams.get(channel_id) != stream_id:
                             self.notify_for_stream(channel_name, stream)
@@ -218,7 +231,8 @@ class TwitchNotifierMain(object):
                         last_streams[channel_id] = None
 
                 self.log("Waiting %s s for next poll" % options.poll)
-                time.sleep(max(options.poll, 60))
+                sleep_until_next_poll_s = max(options.poll, 60)
+                yield sleep_until_next_poll_s, "waiting until another poll is allowed"
         except (KeyboardInterrupt, Exception):
             self._notifier_fini()
             raise
@@ -267,6 +281,16 @@ class TwitchNotifierMain(object):
                 self.log("skipping channel_id %r because it's not a followed channel" % channel_id)
                 continue
             yield channel_id, channel, stream
+
+    @staticmethod
+    def channel_display_name(x):
+        return "%(display_name)s (%(_id)s)" % x
+
+    def init_channel_display(self, followed_channel_entries):
+        pass
+
+    def stream_state_change(self, channel_id, stream_we_consider_online, stream):
+        pass
 
 
 def main():
