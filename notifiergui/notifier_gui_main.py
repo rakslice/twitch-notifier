@@ -1,8 +1,16 @@
 # noinspection PyPackageRequirements
+import os
 import webbrowser
 
 # noinspection PyPackageRequirements
+import sys
 import wx
+
+
+cur = os.path.abspath(".")
+if cur not in sys.path:
+    sys.path.append(cur)
+
 
 from notifiergui.notifier_gui_codegen import MainStatusWindow
 from twitch_notifier_main import TwitchNotifierMain, parse_args

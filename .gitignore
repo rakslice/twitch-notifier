@@ -1,6 +1,5 @@
 .idea/workspace.xml
 *.pyc
 debug.log
-notifiergui/notifier_gui_codegen.py
 notifiergui/notifier_gui_codegen.py.bak
 notifiergui/notifier_gui.wxg.bak
