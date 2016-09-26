@@ -15,6 +15,8 @@ on the included requirements.txt file
 
 Run `twitch_notifier_main.py` and pass it at least the username to watch the follows of.
 
+Use `notifiergui\notifier_gui_main.py` instead for a wxPython-based GUI (requires that you also install [wxPython 3.0 for Python 2.7](https://wxpython.org/download.php#msw), uses the same options)
+
 ## Options
 
     c:\Python27\python.exe twitch_notifier_main.py --username USERNAME [--poll INTERVAL] [--idle INTERVAL] [--all] [--no-unlock-notify] [--auth-oauth TOKEN]
