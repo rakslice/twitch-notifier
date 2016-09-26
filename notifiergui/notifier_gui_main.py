@@ -16,6 +16,10 @@ from notifiergui.notifier_gui_codegen import MainStatusWindow
 from twitch_notifier_main import TwitchNotifierMain, parse_args
 
 
+script_path = os.path.dirname(os.path.abspath(__file__))
+assets_path = os.path.join(script_path, "..", "assets")
+
+
 class OurTwitchNotifierMain(TwitchNotifierMain):
     def __init__(self, options, window_impl):
         """:type window_impl: MainStatusWindowImpl"""
@@ -130,7 +134,7 @@ class MainStatusWindowImpl(MainStatusWindow):
 
         self.toolbar_icon = wx.TaskBarIcon()
         the_icon = wx.EmptyIcon()
-        the_icon.CopyFromBitmap(wx.Bitmap("C:\\Users\\Andrew Tonner\\twitch-notifier\\assets\\icon.ico", wx.BITMAP_TYPE_ANY))
+        the_icon.CopyFromBitmap(wx.Bitmap(os.path.join(assets_path, "icon.ico"), wx.BITMAP_TYPE_ANY))
 
         self.toolbar_icon.SetIcon(the_icon)
 
