@@ -4,6 +4,7 @@ import os
 import time
 import webbrowser
 
+import datetime
 # noinspection PyPackageRequirements
 import twitch.queries
 # noinspection PyPackageRequirements
@@ -239,7 +240,7 @@ class TwitchNotifierMain(object):
 
     def log(self, msg):
         if self.options.debug_output:
-            print "TwitchNotifierMain: %s" % msg
+            print "%s TwitchNotifierMain: %s" % (datetime.datetime.now(), msg)
 
     def get_streams_channels_iterating(self, channel_info, channels_followed):
         """
