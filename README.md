@@ -11,11 +11,15 @@ Then, to install the required libraries, run
 
 on the included requirements.txt file
 
+For the version with the status GUI you'll need to install [wxPython 3.0 for Python 2.7](https://wxpython.org/download.php#msw)
+
 ## Usage
 
-Run `twitch_notifier_main.py` and pass it at least the username to watch the follows of.
+For notifications and a status GUI, run `notifiergui\notifier_gui_main.py`.
 
-Use `notifiergui\notifier_gui_main.py` instead for a wxPython-based GUI (requires that you also install [wxPython 3.0 for Python 2.7](https://wxpython.org/download.php#msw), uses the same options)
+For the old version with just the notificaions, run `twitch_notifier_main.py`.
+
+Both of them use the same command line options (see below); pass at least the username to watch the follows of.
 
 ## Options
 
