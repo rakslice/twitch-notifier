@@ -29,6 +29,7 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         self.followed_channel_entries = None
         self.channel_status_by_id = {}
         self.stream_by_channel_id = {}
+        self.previously_online_streams = set()
 
     def main_loop_main_window_timer(self):
         self.main_loop_iter = iter(self.main_loop_yielder())
@@ -53,6 +54,12 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         self.followed_channel_entries = followed_channel_entries
         self.reset_lists()
 
+    def assume_all_streams_offline(self):
+        self.previously_online_streams.clear()
+        for channel_id, channel_status in self.channel_status_by_id.iteritems():
+            if channel_status["online"]:
+                self.previously_online_streams.add(channel_id)
+
     def reset_lists(self):
         self.window_impl.list_offline.Clear()
         self.channel_status_by_id.clear()
@@ -74,6 +81,9 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
                 return channel
 
     def stream_state_change(self, channel_id, new_online, stream):
+
+        if channel_id in self.previously_online_streams:
+            self.previously_online_streams.remove(channel_id)
 
         self.stream_by_channel_id[channel_id] = stream
 
@@ -101,6 +111,11 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
 
             channel_status["online"] = new_online
             channel_status["idx"] = new_index
+
+    def done_state_changes(self):
+        for channel_id in self.previously_online_streams:
+            self.stream_state_change(channel_id, new_online=False, stream=None)
+        self.previously_online_streams.clear()
 
     def open_site_for_list_entry(self, is_online, index):
         stream = None
