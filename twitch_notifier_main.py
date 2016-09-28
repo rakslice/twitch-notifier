@@ -207,6 +207,7 @@ class TwitchNotifierMain(object):
                 self.log("Checking for follow stream changes")
 
                 if self.use_fast_query:
+                    self.assume_all_streams_offline()
                     channel_stream_iterator = self.get_streams_channels_following(channel_info.viewkeys())
                 else:
                     channel_stream_iterator = self.get_streams_channels_iterating(channel_info, channels_followed)
@@ -230,6 +231,8 @@ class TwitchNotifierMain(object):
                         else:
                             self.log("channel_id %r is_playlist %r" % (channel_id, stream["is_playlist"]))
                         last_streams[channel_id] = None
+
+                self.done_state_changes()
 
                 self.log("Waiting %s s for next poll" % options.poll)
                 sleep_until_next_poll_s = max(options.poll, 60)
@@ -291,6 +294,12 @@ class TwitchNotifierMain(object):
         pass
 
     def stream_state_change(self, channel_id, stream_we_consider_online, stream):
+        pass
+
+    def assume_all_streams_offline(self):
+        pass
+
+    def done_state_changes(self):
         pass
 
 
