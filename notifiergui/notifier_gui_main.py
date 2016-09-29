@@ -5,13 +5,16 @@ import sys
 # noinspection PyPackageRequirements
 import wx
 
-from notifiergui.notifier_gui_codegen import MainStatusWindow
-from twitch_notifier_main import TwitchNotifierMain, parse_args
-
 
 cur = os.path.abspath(".")
 if cur not in sys.path:
     sys.path.append(cur)
+
+
+# These have to go after the path correction
+from notifiergui.notifier_gui_codegen import MainStatusWindow
+from twitch_notifier_main import TwitchNotifierMain, parse_args
+
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 assets_path = os.path.join(script_path, "..", "assets")
