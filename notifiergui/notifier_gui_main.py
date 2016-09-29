@@ -1,20 +1,17 @@
-# noinspection PyPackageRequirements
 import os
 import webbrowser
+import sys
 
 # noinspection PyPackageRequirements
-import sys
 import wx
+
+from notifiergui.notifier_gui_codegen import MainStatusWindow
+from twitch_notifier_main import TwitchNotifierMain, parse_args
 
 
 cur = os.path.abspath(".")
 if cur not in sys.path:
     sys.path.append(cur)
-
-
-from notifiergui.notifier_gui_codegen import MainStatusWindow
-from twitch_notifier_main import TwitchNotifierMain, parse_args
-
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 assets_path = os.path.join(script_path, "..", "assets")
@@ -28,12 +25,22 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         self.main_loop_iter = None
         self.followed_channel_entries = None
         self.channel_status_by_id = {}
+        """:type: dict[str, dict[str, any]]"""
         self.stream_by_channel_id = {}
         self.previously_online_streams = set()
 
     def main_loop_main_window_timer(self):
+        if self.need_browser_auth():
+            self.do_browser_auth()
+        else:
+            self.main_loop_main_window_timer_with_auth()
+
+    def main_loop_main_window_timer_with_auth(self):
         self.main_loop_iter = iter(self.main_loop_yielder())
         self.set_next_time()
+
+    def main_loop_post_auth(self):
+        self.main_loop_main_window_timer_with_auth()
 
     def _init_notifier(self):
         self.windows_balloon_tip_obj = OurWindowsBalloonTip(self.window_impl)

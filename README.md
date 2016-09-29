@@ -12,6 +12,7 @@ Then, to install the required libraries, run
 on the included requirements.txt file
 
 For the version with the status GUI you'll need to install [wxPython 3.0 for Python 2.7](https://wxpython.org/download.php#msw)
+(vintage 1990s stylin's!)
 
 ## Usage
 
@@ -30,8 +31,9 @@ Both of them use the same command line options (see below); pass at least the us
     --idle INTERVAL  - How much time in seconds without activity to go idle
     --all            - Watch all followed streams, not just ones with notifications enabled
     --no-unlock-notify   - Don't notify again on unlock and when we return from idle
-    --auth-oauth TOKEN   - OAuth token to pass
-
+    --auth-oauth TOKEN   - OAuth token to use (skips login)
+    --no-browser-login   - Don't login -- just use the given token if any, or else the given username and public APIs 
+    
 ## Acknowledgments
 
 Windows 10 notifications based on [https://github.com/jithurjacob/Windows-10-Toast-Notifications](https://github.com/jithurjacob/Windows-10-Toast-Notifications),
