@@ -12,6 +12,7 @@ import twitch.api.v3
 # noinspection PyPackageRequirements
 import twitch.keys
 
+import browser_auth
 import windows_10_toast_notifications
 import windows_lock_check
 
@@ -23,8 +24,12 @@ assets_path = os.path.join(script_path, "assets")
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--user",
-                        required=True,
                         dest="username")
+    parser.add_argument("--no-browser-auth",
+                        help="don't authenticate through twitch website login if token not supplied",
+                        dest="browser_auth",
+                        default=True,
+                        action="store_false")
     parser.add_argument("--poll",
                         help="poll interval",
                         type=int,
@@ -95,6 +100,7 @@ def paged_query_iterator(func_to_page, results_list_key, page_size=25, **kwargs)
 class TwitchNotifierMain(object):
     def __init__(self, options):
         self.options = options
+        self._auth_oauth = None
         self.windows_balloon_tip_obj = None
         """:type: windows_10_toast_notifications.WindowsBalloonTip"""
         self.use_fast_query = False
@@ -133,7 +139,34 @@ class TwitchNotifierMain(object):
         self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message,
                                                  callback=callback)
 
+    def _auth_complete_callback(self, token):
+        assert token is not None
+        self._auth_oauth = token
+        # get us a username
+
+        self.main_loop_post_auth()
+
+    def main_loop_auth(self):
+        return self.main_loop_post_auth()
+
+    def need_browser_auth(self):
+        return self.options.browser_auth and self._auth_oauth is None
+
+    def do_browser_auth(self):
+        browser_auth.do_browser(self._auth_complete_callback, debug=self.options.debug_output)
+
     def main_loop(self):
+        options = self.options
+
+        if options.authorization_oauth is not None:
+            self._auth_oauth = options.authorization_oauth
+        elif self.need_browser_auth():
+            self.do_browser_auth()
+        else:
+            assert options.username is not None, "You need to set a username (--user)"
+        self.main_loop_post_auth()
+
+    def main_loop_post_auth(self):
         for sleep_time, sleep_reason in self.main_loop_yielder():
             time.sleep(sleep_time)
 
@@ -151,11 +184,15 @@ class TwitchNotifierMain(object):
 
         # first time querying
 
-        if options.authorization_oauth is not None:
-            authorization = "OAuth %s" % options.authorization_oauth
+        if self._auth_oauth is not None:
+            authorization = "OAuth %s" % self._auth_oauth
             # noinspection PyProtectedMember
             twitch.queries._v3_headers["Authorization"] = authorization
             self.use_fast_query = True
+
+            if username is None:
+                root_response = twitch.api.v3.root()
+                username = root_response["token"]["user_name"]
 
         notifications_disabled_for = []
 
