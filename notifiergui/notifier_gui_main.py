@@ -123,7 +123,8 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
             channel_status["idx"] = new_index
 
     def done_state_changes(self):
-        for channel_id in self.previously_online_streams:
+        streams_that_went_offline = list(self.previously_online_streams)
+        for channel_id in streams_that_went_offline:
             self.stream_state_change(channel_id, new_online=False, stream=None)
         self.previously_online_streams.clear()
 
