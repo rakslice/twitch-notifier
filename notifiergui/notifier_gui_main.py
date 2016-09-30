@@ -2,6 +2,7 @@ import os
 import webbrowser
 import sys
 
+import datetime
 # noinspection PyPackageRequirements
 import wx
 
@@ -56,7 +57,8 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         self.window_impl.set_timer_with_callback(time_s, self.set_next_time)
 
     def log(self, msg):
-        self.window_impl.list_log.Append(msg)
+        line_item = u"%s: %s" % (datetime.datetime.now(), msg)
+        self.window_impl.list_log.Append(line_item)
 
     def init_channel_display(self, followed_channel_entries):
         super(OurTwitchNotifierMain, self).init_channel_display(followed_channel_entries)
