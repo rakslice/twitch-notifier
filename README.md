@@ -5,14 +5,14 @@ A quick python twitch notifier for Windows 10
 
 First you'll need [Python 2.7](https://www.python.org/downloads/release/python-2711/)
 
-Then, to install the required libraries, run
+For the version with the status GUI you'll need to install [wxPython 3.0 for Python 2.7](https://wxpython.org/download.php#msw)
+(vintage 1990s stylin's!)
+
+Then, to install the other required libraries, run
 
     >c:\Python27\Scripts\pip.exe install -r requirements.txt
 
 on the included requirements.txt file
-
-For the version with the status GUI you'll need to install [wxPython 3.0 for Python 2.7](https://wxpython.org/download.php#msw)
-(vintage 1990s stylin's!)
 
 ## Usage
 
@@ -20,7 +20,7 @@ For notifications and a status GUI, run `notifiergui\notifier_gui_main.py`.
 
 For the old version with just the notificaions, run `twitch_notifier_main.py`.
 
-Both of them use the same command line options (see below); pass at least the username to watch the follows of.
+Both of them use the same command line options (see below).
 
 ## Options
 
@@ -36,6 +36,8 @@ Both of them use the same command line options (see below); pass at least the us
     
 ## Acknowledgments
 
-Windows 10 notifications based on [https://github.com/jithurjacob/Windows-10-Toast-Notifications](https://github.com/jithurjacob/Windows-10-Toast-Notifications),
+Windows 10 notifications for the non-GUI version based on [https://github.com/jithurjacob/Windows-10-Toast-Notifications](https://github.com/jithurjacob/Windows-10-Toast-Notifications),
 
 Twitch API via python-twitch ([https://github.com/ingwinlu/python-twitch](https://github.com/ingwinlu/python-twitch))
+
+GUI version uses [wxWidgets](https://www.wxwidgets.org/) / [wxPython](https://wxpython.org/), grequests, and appdirs
