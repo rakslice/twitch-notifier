@@ -42,6 +42,7 @@ class MainStatusWindowImpl(MainStatusWindow):
         super(MainStatusWindowImpl, self).__init__(*args, **kwargs)
         self.timer = None
         self.balloon_click_callback = None
+        self.app = None
 
         self.toolbar_icon = wx.TaskBarIcon()
         the_icon = wx.EmptyIcon()
@@ -165,7 +166,9 @@ class MainStatusWindowImpl(MainStatusWindow):
         self.toolbar_icon.RemoveIcon()
         self.toolbar_icon.Destroy()
         self.toolbar_icon = None
-        self.Destroy()
+        self.Close()
+        self.app.ExitMainLoop()
+        self.app = None
 
     def set_timer_with_callback(self, time_s, callback, timer_id=100):
         assert self.timer is None
@@ -190,6 +193,7 @@ def main():
     app = wx.PySimpleApp(0)
     wx.InitAllImageHandlers()
     frame_1 = MainStatusWindowImpl(None, -1, "")
+    frame_1.app = app
     app.SetTopWindow(frame_1)
     frame_1.Show()
     app.MainLoop()
