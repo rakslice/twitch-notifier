@@ -14,6 +14,15 @@ class MainStatusWindow(wx.Frame):
         # begin wxGlade: MainStatusWindow.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
+        self.bitmap_channel_logo = wx.StaticBitmap(self, -1, wx.NullBitmap)
+        self.label_6 = wx.StaticText(self, -1, "Channel Description:")
+        self.label_head_game = wx.StaticText(self, -1, "Game:")
+        self.label_head_up = wx.StaticText(self, -1, "Up:")
+        self.label_head_started = wx.StaticText(self, -1, "Started:")
+        self.label_channel_status = wx.StaticText(self, -1, "")
+        self.label_game = wx.StaticText(self, -1, "")
+        self.label_uptime = wx.StaticText(self, -1, "")
+        self.label_start_time = wx.StaticText(self, -1, "")
         self.label_1 = wx.StaticText(self, -1, "Online")
         self.list_online = wx.ListBox(self, -1, choices=[])
         self.label_2 = wx.StaticText(self, -1, "Offline")
@@ -28,7 +37,9 @@ class MainStatusWindow(wx.Frame):
         self.__do_layout()
 
         self.Bind(wx.EVT_LISTBOX_DCLICK, self._on_list_online_dclick, self.list_online)
+        self.Bind(wx.EVT_LISTBOX, self._on_list_online_gen, self.list_online)
         self.Bind(wx.EVT_LISTBOX_DCLICK, self._on_list_offline_dclick, self.list_offline)
+        self.Bind(wx.EVT_LISTBOX, self._on_list_offline_gen, self.list_offline)
         self.Bind(wx.EVT_BUTTON, self._on_options_button_click, self.button_options)
         self.Bind(wx.EVT_BUTTON, self._on_button_quit, self.button_quit)
         # end wxGlade
@@ -36,7 +47,19 @@ class MainStatusWindow(wx.Frame):
     def __set_properties(self):
         # begin wxGlade: MainStatusWindow.__set_properties
         self.SetTitle("twitch-notifier")
-        self.SetSize((393, 527))
+        self.SetSize((788, 793))
+        self.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.bitmap_channel_logo.SetMinSize((128,128))
+        self.label_6.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.label_head_game.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.label_head_up.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.label_head_started.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.label_channel_status.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.label_game.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.label_uptime.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.label_start_time.SetBackgroundColour(wx.Colour(240, 240, 240))
+        self.list_online.SetToolTipString("Double-Click to open stream page")
+        self.list_offline.SetToolTipString("Double-Click to open channel page")
         self.button_options.Enable(False)
         # end wxGlade
 
@@ -44,6 +67,23 @@ class MainStatusWindow(wx.Frame):
         # begin wxGlade: MainStatusWindow.__do_layout
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
         sizer_2 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_6 = wx.BoxSizer(wx.VERTICAL)
+        sizer_5 = wx.BoxSizer(wx.VERTICAL)
+        sizer_3.Add(self.bitmap_channel_logo, 0, wx.EXPAND, 0)
+        sizer_3.Add((10, 1), 0, wx.EXPAND, 0)
+        sizer_5.Add(self.label_6, 0, wx.EXPAND, 0)
+        sizer_5.Add(self.label_head_game, 0, wx.EXPAND, 0)
+        sizer_5.Add(self.label_head_up, 0, wx.EXPAND, 0)
+        sizer_5.Add(self.label_head_started, 1, wx.EXPAND, 0)
+        sizer_3.Add(sizer_5, 0, wx.EXPAND, 0)
+        sizer_3.Add((10, 1), 0, wx.EXPAND, 0)
+        sizer_6.Add(self.label_channel_status, 0, wx.EXPAND, 0)
+        sizer_6.Add(self.label_game, 0, wx.EXPAND, 0)
+        sizer_6.Add(self.label_uptime, 0, wx.EXPAND, 0)
+        sizer_6.Add(self.label_start_time, 1, wx.EXPAND, 0)
+        sizer_3.Add(sizer_6, 1, wx.EXPAND, 0)
+        sizer_1.Add(sizer_3, 0, wx.EXPAND, 0)
         sizer_1.Add(self.label_1, 0, wx.EXPAND, 0)
         sizer_1.Add(self.list_online, 0, wx.EXPAND, 0)
         sizer_1.Add(self.label_2, 0, wx.EXPAND, 0)
@@ -73,6 +113,14 @@ class MainStatusWindow(wx.Frame):
 
     def _on_options_button_click(self, event): # wxGlade: MainStatusWindow.<event_handler>
         print "Event handler `_on_options_button_click' not implemented"
+        event.Skip()
+
+    def _on_list_online_gen(self, event): # wxGlade: MainStatusWindow.<event_handler>
+        print "Event handler `_on_list_online_gen' not implemented"
+        event.Skip()
+
+    def _on_list_offline_gen(self, event): # wxGlade: MainStatusWindow.<event_handler>
+        print "Event handler `_on_list_offline_gen' not implemented"
         event.Skip()
 
 # end of class MainStatusWindow

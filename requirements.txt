@@ -1,2 +1,5 @@
-pypiwin32
-python-twitch
+pypiwin32==219
+python-twitch==1.3.0
+# was 1.2.0
+grequests==0.3.0
+appdirs==1.4.0

@@ -2,6 +2,7 @@ import argparse
 import calendar
 import os
 import time
+import traceback
 import webbrowser
 
 import datetime
@@ -12,6 +13,7 @@ import twitch.api.v3
 # noinspection PyPackageRequirements
 import twitch.keys
 
+import browser_auth
 import windows_10_toast_notifications
 import windows_lock_check
 
@@ -23,8 +25,12 @@ assets_path = os.path.join(script_path, "assets")
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--user",
-                        required=True,
                         dest="username")
+    parser.add_argument("--no-browser-auth",
+                        help="don't authenticate through twitch website login if token not supplied",
+                        dest="browser_auth",
+                        default=True,
+                        action="store_false")
     parser.add_argument("--poll",
                         help="poll interval",
                         type=int,
@@ -92,9 +98,15 @@ def paged_query_iterator(func_to_page, results_list_key, page_size=25, **kwargs)
         cur_offset += page_size
 
 
+def convert_iso_time(iso_time):
+    start_time = calendar.timegm(time.strptime(iso_time, "%Y-%m-%dT%H:%M:%SZ"))
+    return start_time
+
+
 class TwitchNotifierMain(object):
     def __init__(self, options):
         self.options = options
+        self._auth_oauth = None
         self.windows_balloon_tip_obj = None
         """:type: windows_10_toast_notifications.WindowsBalloonTip"""
         self.use_fast_query = False
@@ -111,11 +123,12 @@ class TwitchNotifierMain(object):
         self.windows_balloon_tip_obj.close()
 
     def notify_for_stream(self, channel_name, stream):
-        start_time = calendar.timegm(time.strptime(stream["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
+        created_at = stream["created_at"]
+        start_time = convert_iso_time(created_at)
         elapsed_s = time.time() - start_time
 
-        game = stream["game"]
         stream_browser_link = stream["channel"]["url"]
+        game = stream["game"]
 
         if game is None:
             show_info = ""
@@ -133,7 +146,34 @@ class TwitchNotifierMain(object):
         self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message,
                                                  callback=callback)
 
+    def _auth_complete_callback(self, token):
+        assert token is not None
+        self._auth_oauth = token
+        # get us a username
+
+        self.main_loop_post_auth()
+
+    def main_loop_auth(self):
+        return self.main_loop_post_auth()
+
+    def need_browser_auth(self):
+        return self.options.browser_auth and self._auth_oauth is None
+
+    def do_browser_auth(self):
+        browser_auth.do_browser(self._auth_complete_callback, debug=self.options.debug_output)
+
     def main_loop(self):
+        options = self.options
+
+        if options.authorization_oauth is not None:
+            self._auth_oauth = options.authorization_oauth
+        elif self.need_browser_auth():
+            self.do_browser_auth()
+        else:
+            assert options.username is not None, "You need to set a username (--user)"
+        self.main_loop_post_auth()
+
+    def main_loop_post_auth(self):
         for sleep_time, sleep_reason in self.main_loop_yielder():
             time.sleep(sleep_time)
 
@@ -151,11 +191,15 @@ class TwitchNotifierMain(object):
 
         # first time querying
 
-        if options.authorization_oauth is not None:
-            authorization = "OAuth %s" % options.authorization_oauth
+        if self._auth_oauth is not None:
+            authorization = "OAuth %s" % self._auth_oauth
             # noinspection PyProtectedMember
             twitch.queries._v3_headers["Authorization"] = authorization
             self.use_fast_query = True
+
+            if username is None:
+                root_response = twitch.api.v3.root()
+                username = root_response["token"]["user_name"]
 
         notifications_disabled_for = []
 
@@ -193,43 +237,50 @@ class TwitchNotifierMain(object):
         try:
             # Poll for twitch
             while True:
-                locked = windows_lock_check.check_if_locked()
-                idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
-                self.log("locked: %s idle: %s" % (locked, idle))
-                if locked or idle:
-                    self.log("Locked, waiting for unlock")
-                    while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
-                        yield 5, "waiting for unlock"
-                    if options.unlock_notify:
-                        self.log("Clearing last streams to renotify")
-                        last_streams = {}
+                try:
+                    locked = windows_lock_check.check_if_locked()
+                    idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
+                    self.log("locked: %s idle: %s" % (locked, idle))
+                    if locked or idle:
+                        self.log("Locked, waiting for unlock")
+                        while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
+                            yield 5, "waiting for unlock"
+                        if options.unlock_notify:
+                            self.log("Clearing last streams to renotify")
+                            last_streams = {}
 
-                self.log("Checking for follow stream changes")
+                    self.log("Checking for follow stream changes")
 
-                if self.use_fast_query:
-                    channel_stream_iterator = self.get_streams_channels_following(channel_info.viewkeys())
-                else:
-                    channel_stream_iterator = self.get_streams_channels_iterating(channel_info, channels_followed)
-
-                for channel_id, channel, stream in channel_stream_iterator:
-                    channel_name = channel["display_name"]
-
-                    stream_we_consider_online = stream is not None and not stream["is_playlist"]
-
-                    self.stream_state_change(channel_id, stream_we_consider_online, stream)
-
-                    if stream_we_consider_online:
-                        stream_id = stream["_id"]
-                        if last_streams.get(channel_id) != stream_id:
-                            self.notify_for_stream(channel_name, stream)
-
-                        last_streams[channel_id] = stream_id
+                    if self.use_fast_query:
+                        self.assume_all_streams_offline()
+                        channel_stream_iterator = self.get_streams_channels_following(channel_info.viewkeys())
                     else:
-                        if stream is None:
-                            self.log("channel_id %r had stream None" % channel_id)
+                        channel_stream_iterator = self.get_streams_channels_iterating(channel_info, channels_followed)
+
+                    for channel_id, channel, stream in channel_stream_iterator:
+                        channel_name = channel["display_name"]
+
+                        stream_we_consider_online = stream is not None and not stream["is_playlist"]
+
+                        self.stream_state_change(channel_id, stream_we_consider_online, stream)
+
+                        if stream_we_consider_online:
+                            stream_id = stream["_id"]
+                            if last_streams.get(channel_id) != stream_id:
+                                self.notify_for_stream(channel_name, stream)
+
+                            last_streams[channel_id] = stream_id
                         else:
-                            self.log("channel_id %r is_playlist %r" % (channel_id, stream["is_playlist"]))
-                        last_streams[channel_id] = None
+                            if stream is None:
+                                self.log("channel_id %r had stream None" % channel_id)
+                            else:
+                                self.log("channel_id %r is_playlist %r" % (channel_id, stream["is_playlist"]))
+                            last_streams[channel_id] = None
+
+                    self.done_state_changes()
+                except Exception, e:
+                    traceback.print_exc()
+                    self.log(repr(e))
 
                 self.log("Waiting %s s for next poll" % options.poll)
                 sleep_until_next_poll_s = max(options.poll, 60)
@@ -291,6 +342,12 @@ class TwitchNotifierMain(object):
         pass
 
     def stream_state_change(self, channel_id, stream_we_consider_online, stream):
+        pass
+
+    def assume_all_streams_offline(self):
+        pass
+
+    def done_state_changes(self):
         pass
 
 

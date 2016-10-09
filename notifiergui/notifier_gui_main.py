@@ -1,129 +1,41 @@
-# noinspection PyPackageRequirements
 import os
-import webbrowser
+import sys
+import cStringIO
+import time
 
 # noinspection PyPackageRequirements
-import sys
 import wx
 
+from notifiergui.our_twitch_notifier_main import OurTwitchNotifierMain
 
 cur = os.path.abspath(".")
 if cur not in sys.path:
     sys.path.append(cur)
 
 
+# These have to go after the path correction
 from notifiergui.notifier_gui_codegen import MainStatusWindow
-from twitch_notifier_main import TwitchNotifierMain, parse_args
-
+from twitch_notifier_main import parse_args, time_desc, convert_iso_time
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 assets_path = os.path.join(script_path, "..", "assets")
 
 
-class OurTwitchNotifierMain(TwitchNotifierMain):
-    def __init__(self, options, window_impl):
-        """:type window_impl: MainStatusWindowImpl"""
-        self.window_impl = window_impl
-        super(OurTwitchNotifierMain, self).__init__(options)
-        self.main_loop_iter = None
-        self.followed_channel_entries = None
-        self.channel_status_by_id = {}
-        self.stream_by_channel_id = {}
-
-    def main_loop_main_window_timer(self):
-        self.main_loop_iter = iter(self.main_loop_yielder())
-        self.set_next_time()
-
-    def _init_notifier(self):
-        self.windows_balloon_tip_obj = OurWindowsBalloonTip(self.window_impl)
-
-    def _notifier_fini(self):
-        pass
-
-    def set_next_time(self):
-        time_s, wait_reason = self.main_loop_iter.next()
-        self.window_impl.set_timer_with_callback(time_s, self.set_next_time)
-
-    def log(self, msg):
-        self.window_impl.list_log.Append(msg)
-
-    def init_channel_display(self, followed_channel_entries):
-        super(OurTwitchNotifierMain, self).init_channel_display(followed_channel_entries)
-
-        self.followed_channel_entries = followed_channel_entries
-        self.reset_lists()
-
-    def reset_lists(self):
-        self.window_impl.list_offline.Clear()
-        self.channel_status_by_id.clear()
-        for i, channel in enumerate(self.followed_channel_entries):
-            self.window_impl.list_offline.Append(self.channel_display_name(channel))
-            channel_id = channel["_id"]
-            self.channel_status_by_id[channel_id] = {"online": False, "idx": i}
-
-    def _list_for_is_online(self, is_online):
-        """:rtype: ListBox"""
-        if is_online:
-            return self.window_impl.list_online
-        else:
-            return self.window_impl.list_offline
-
-    def _channel_for_id(self, channel_id):
-        for channel in self.followed_channel_entries:
-            if channel["_id"] == channel_id:
-                return channel
-
-    def stream_state_change(self, channel_id, new_online, stream):
-
-        self.stream_by_channel_id[channel_id] = stream
-
-        channel_obj = self._channel_for_id(channel_id)
-        if channel_obj is None:
-            return
-
-        channel_status = self.channel_status_by_id[channel_id]
-        old_online = channel_status["online"]
-        if old_online != new_online:
-            old_index = channel_status["idx"]
-            out_of_list = self._list_for_is_online(old_online)
-            out_of_list.Delete(old_index)
-
-            into_list = self._list_for_is_online(new_online)
-            new_index = into_list.GetCount()
-            into_list.Append(self.channel_display_name(channel_obj))
-
-            # update the later indexes
-            for cur_status in self.channel_status_by_id.values():
-                if cur_status["online"] == old_online and cur_status["idx"] > old_index:
-                    cur_status["idx"] -= 1
-                elif cur_status["online"] == new_online and cur_status["idx"] >= new_index:
-                    cur_status["idx"] += 1
-
-            channel_status["online"] = new_online
-            channel_status["idx"] = new_index
-
-    def open_site_for_list_entry(self, is_online, index):
-        stream = None
-        channel = None
-        for channel_id, cur_status in self.channel_status_by_id.iteritems():
-            if cur_status["idx"] == index and cur_status["online"] == is_online:
-                if channel_id in self.stream_by_channel_id:
-                    stream = self.stream_by_channel_id[channel_id]
-                channel = self._channel_for_id(channel_id)
-                if channel is None:
-                    self.log("Channel entry not found for id %r" % channel_id)
-                    return
-                break
-
-        if stream is not None:
-            url = stream["channel"]["url"]
-        elif channel is not None:
-            url = channel["url"]
-        else:
-            self.log("Channel is none somehow")
-            return
-
-        webbrowser.open(url)
+def show_image_in_wx_image(control, image_data):
+    """
+    Using image data in a byte string, show it in a control
+    :type control: wx.StaticBitmap
+    :type image_data: str
+    """
+    # fixed height control expected
+    height = control.GetMinHeight()
+    width = control.GetMinWidth()
+    sbuf = cStringIO.StringIO(image_data)
+    image = wx.ImageFromStream(sbuf)
+    if width and height:
+        image = image.Scale(width, height)
+    bitmap = image.ConvertToBitmap()
+    control.SetBitmap(bitmap)
 
 
 class MainStatusWindowImpl(MainStatusWindow):
@@ -146,6 +58,8 @@ class MainStatusWindowImpl(MainStatusWindow):
         self.main_obj = OurTwitchNotifierMain(options, self)
         self.main_obj.main_loop_main_window_timer()
 
+        self.base_logo_bitmap = self.bitmap_channel_logo.GetBitmap()
+
     # noinspection PyUnusedLocal
     def _on_toolbar_balloon_click(self, event):
         if self.balloon_click_callback is not None:
@@ -154,6 +68,7 @@ class MainStatusWindowImpl(MainStatusWindow):
     # noinspection PyUnusedLocal
     def _on_toolbar_icon_left_dclick(self, event):
         self.Show()
+        self.Raise()
 
     # noinspection PyUnusedLocal
     def _on_close(self, event):
@@ -161,6 +76,88 @@ class MainStatusWindowImpl(MainStatusWindow):
 
     def _on_list_online_dclick(self, event):
         self.main_obj.open_site_for_list_entry(True, event.GetInt())
+
+    def clear_info(self):
+        # self.label_debug.SetLabel(u"")
+        self.clear_stream_info()
+
+    def set_stream_info(self, stream):
+        for label in [self.label_head_game, self.label_head_started, self.label_head_up]:
+            label.Show()
+            label.Refresh()
+        game = stream["game"]
+        if game:
+            self.label_game.SetLabel(game)
+        else:
+            self.label_game.SetLabel(u"")
+        created_at = stream["created_at"]
+        self.label_start_time.SetLabel(created_at)
+        start_time = convert_iso_time(created_at)
+        elapsed_s = time.time() - start_time
+        self.label_uptime.SetLabel(time_desc(elapsed_s))
+        # self.label_stream_desc.SetLabel(u" ".join(parts))
+
+    def clear_stream_info(self):
+        # self.label_stream_desc.SetLabel(u"")
+        for label in [self.label_game, self.label_uptime, self.label_start_time]:
+            label.SetLabel(u"")
+        for label in [self.label_head_game, self.label_head_started, self.label_head_up]:
+            label.Hide()
+
+    def show_info(self, channel, stream):
+        # d = "channel:\n%s\nstream:\n%s" % (pretty_json(channel), pretty_json(stream))
+        # self.label_debug.SetLabel(d.replace("\n", "\r\n"))
+
+        if channel is None:
+            self.label_channel_status.SetLabel(u"")
+        else:
+            self.label_channel_status.SetLabel(channel["status"])
+
+        if stream is not None:
+            self.set_stream_info(stream)
+
+        else:
+            self.clear_stream_info()
+
+        self.main_obj.cancel_delayed_url_loads_for_context("channel")
+
+        self.bitmap_channel_logo.SetBitmap(self.base_logo_bitmap)
+        # self.bitmap_channel_logo.ClearBackground()
+
+        logo_url = channel.get("logo")
+        if logo_url:
+            # noinspection PyUnusedLocal
+            def _on_logo_load(rs, **kwargs):
+                """:type rs: requests.Response"""
+                if not rs.status_code == 200:
+                    self.main_obj.log("Got HTTP error %d %s retrieving %s" % (rs.status_code, rs.reason, logo_url))
+                    return
+                self.main_obj.log("Logo loaded")
+                content_type = rs.headers["Content-type"]
+                # TODO verify content type
+                data = rs.content
+                show_image_in_wx_image(self.bitmap_channel_logo, data)
+
+            self.main_obj.log("Showing logo %s" % logo_url)
+            self.main_obj.do_delayed_url_load("channel", logo_url, _on_logo_load)
+
+    def _on_list_online_gen(self, event):
+        idx = event.GetInt()
+        if idx >= 0:
+            self.list_offline.DeselectAll()  # deselect other list
+            channel, stream = self.main_obj.get_channel_and_stream_for_list_entry(True, idx)
+            self.show_info(channel, stream)
+        else:
+            self.clear_info()
+
+    def _on_list_offline_gen(self, event):
+        idx = event.GetInt()
+        if idx >= 0:
+            self.list_online.DeselectAll()  # deselect other list
+            channel, stream = self.main_obj.get_channel_and_stream_for_list_entry(False, idx)
+            self.show_info(channel, stream)
+        else:
+            self.clear_info()
 
     def _on_list_offline_dclick(self, event):
         self.main_obj.open_site_for_list_entry(False, event.GetInt())
@@ -188,18 +185,6 @@ class MainStatusWindowImpl(MainStatusWindow):
 
     def set_balloon_click_callback(self, callback):
         self.balloon_click_callback = callback
-
-
-class OurWindowsBalloonTip(object):
-    def __init__(self, main_window):
-        """:type main_window: MainStatusWindowImpl"""
-        self.main_window = main_window
-
-    def balloon_tip(self, title, msg, callback=None):
-        self.main_window.set_balloon_click_callback(callback)
-
-        icon = self.main_window.GetIcon()
-        self.main_window.toolbar_icon.ShowBalloon(title, msg, 0, icon.GetHandle())
 
 
 def main():
