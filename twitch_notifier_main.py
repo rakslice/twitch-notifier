@@ -97,6 +97,11 @@ def paged_query_iterator(func_to_page, results_list_key, page_size=25, **kwargs)
         cur_offset += page_size
 
 
+def convert_iso_time(iso_time):
+    start_time = calendar.timegm(time.strptime(iso_time, "%Y-%m-%dT%H:%M:%SZ"))
+    return start_time
+
+
 class TwitchNotifierMain(object):
     def __init__(self, options):
         self.options = options
@@ -117,11 +122,12 @@ class TwitchNotifierMain(object):
         self.windows_balloon_tip_obj.close()
 
     def notify_for_stream(self, channel_name, stream):
-        start_time = calendar.timegm(time.strptime(stream["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
+        created_at = stream["created_at"]
+        start_time = convert_iso_time(created_at)
         elapsed_s = time.time() - start_time
 
-        game = stream["game"]
         stream_browser_link = stream["channel"]["url"]
+        game = stream["game"]
 
         if game is None:
             show_info = ""
