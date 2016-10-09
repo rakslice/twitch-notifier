@@ -6,14 +6,13 @@ import time
 # noinspection PyPackageRequirements
 import wx
 
-from notifiergui.our_twitch_notifier_main import OurTwitchNotifierMain
-
 cur = os.path.abspath(".")
 if cur not in sys.path:
     sys.path.append(cur)
 
 
 # These have to go after the path correction
+from notifiergui.our_twitch_notifier_main import OurTwitchNotifierMain
 from notifiergui.notifier_gui_codegen import MainStatusWindow
 from twitch_notifier_main import parse_args, time_desc, convert_iso_time
 
