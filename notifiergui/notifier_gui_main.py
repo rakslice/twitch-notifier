@@ -68,6 +68,7 @@ class MainStatusWindowImpl(MainStatusWindow):
     # noinspection PyUnusedLocal
     def _on_toolbar_icon_left_dclick(self, event):
         self.Show()
+        self.Raise()
 
     # noinspection PyUnusedLocal
     def _on_close(self, event):
