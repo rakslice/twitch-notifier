@@ -2,6 +2,7 @@ import argparse
 import calendar
 import os
 import time
+import traceback
 import webbrowser
 
 import datetime
@@ -236,46 +237,50 @@ class TwitchNotifierMain(object):
         try:
             # Poll for twitch
             while True:
-                locked = windows_lock_check.check_if_locked()
-                idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
-                self.log("locked: %s idle: %s" % (locked, idle))
-                if locked or idle:
-                    self.log("Locked, waiting for unlock")
-                    while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
-                        yield 5, "waiting for unlock"
-                    if options.unlock_notify:
-                        self.log("Clearing last streams to renotify")
-                        last_streams = {}
+                try:
+                    locked = windows_lock_check.check_if_locked()
+                    idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
+                    self.log("locked: %s idle: %s" % (locked, idle))
+                    if locked or idle:
+                        self.log("Locked, waiting for unlock")
+                        while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
+                            yield 5, "waiting for unlock"
+                        if options.unlock_notify:
+                            self.log("Clearing last streams to renotify")
+                            last_streams = {}
 
-                self.log("Checking for follow stream changes")
+                    self.log("Checking for follow stream changes")
 
-                if self.use_fast_query:
-                    self.assume_all_streams_offline()
-                    channel_stream_iterator = self.get_streams_channels_following(channel_info.viewkeys())
-                else:
-                    channel_stream_iterator = self.get_streams_channels_iterating(channel_info, channels_followed)
-
-                for channel_id, channel, stream in channel_stream_iterator:
-                    channel_name = channel["display_name"]
-
-                    stream_we_consider_online = stream is not None and not stream["is_playlist"]
-
-                    self.stream_state_change(channel_id, stream_we_consider_online, stream)
-
-                    if stream_we_consider_online:
-                        stream_id = stream["_id"]
-                        if last_streams.get(channel_id) != stream_id:
-                            self.notify_for_stream(channel_name, stream)
-
-                        last_streams[channel_id] = stream_id
+                    if self.use_fast_query:
+                        self.assume_all_streams_offline()
+                        channel_stream_iterator = self.get_streams_channels_following(channel_info.viewkeys())
                     else:
-                        if stream is None:
-                            self.log("channel_id %r had stream None" % channel_id)
-                        else:
-                            self.log("channel_id %r is_playlist %r" % (channel_id, stream["is_playlist"]))
-                        last_streams[channel_id] = None
+                        channel_stream_iterator = self.get_streams_channels_iterating(channel_info, channels_followed)
 
-                self.done_state_changes()
+                    for channel_id, channel, stream in channel_stream_iterator:
+                        channel_name = channel["display_name"]
+
+                        stream_we_consider_online = stream is not None and not stream["is_playlist"]
+
+                        self.stream_state_change(channel_id, stream_we_consider_online, stream)
+
+                        if stream_we_consider_online:
+                            stream_id = stream["_id"]
+                            if last_streams.get(channel_id) != stream_id:
+                                self.notify_for_stream(channel_name, stream)
+
+                            last_streams[channel_id] = stream_id
+                        else:
+                            if stream is None:
+                                self.log("channel_id %r had stream None" % channel_id)
+                            else:
+                                self.log("channel_id %r is_playlist %r" % (channel_id, stream["is_playlist"]))
+                            last_streams[channel_id] = None
+
+                    self.done_state_changes()
+                except Exception, e:
+                    traceback.print_exc()
+                    self.log(repr(e))
 
                 self.log("Waiting %s s for next poll" % options.poll)
                 sleep_until_next_poll_s = max(options.poll, 60)
