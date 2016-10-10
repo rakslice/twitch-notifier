@@ -14,6 +14,15 @@ Then, to install the other required libraries, run
 
 on the included requirements.txt file
 
+**This is primarily for Windows, but on Ubuntu (tested with 16.04.1) you can try:**
+
+NB: No notifications working in Linux yet, just GUI 
+
+	sudo apt install python-pip python-virtualenv python-wxpython python-wxgtk-webview3.0
+	virtualenv ~/twitch-notifier-virtualenv
+	~/twitch-notifier-virtualenv/bin/pip install -r requirements.txt
+	LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libwx_gtk2u_webview-3.0.so ~/twitch-notifier-virtualenv/bin/python notifiergui/notifier_gui_main.py 
+
 ## Usage
 
 For notifications and a status GUI, run `notifiergui\notifier_gui_main.py`.
