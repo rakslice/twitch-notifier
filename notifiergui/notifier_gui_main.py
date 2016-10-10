@@ -126,8 +126,9 @@ class MainStatusWindowImpl(MainStatusWindow):
         # Windows:
         if hasattr(icon, "GetHandle"):
             icon_handle = icon.GetHandle()
-
-        self.toolbar_icon.ShowBalloon(notification.title, notification.msg, 0, icon_handle)
+            self.toolbar_icon.ShowBalloon(notification.title, notification.msg, 0, icon_handle)
+        else:
+            self.toolbar_icon.ShowBalloon(notification.title, notification.msg, 0)
 
     # noinspection PyUnusedLocal
     def _on_toolbar_balloon_timeout(self, event):
