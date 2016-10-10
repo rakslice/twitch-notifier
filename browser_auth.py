@@ -23,6 +23,8 @@ class MyBrowser(wx.Dialog):
 
         self.scheme_callbacks = {}
 
+        self.last_callback_url_and_parsed = None
+
         self.browser = browser
         self.browser.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self._on_navigating)
         self.browser.Bind(wx.html2.EVT_WEBVIEW_NAVIGATED, self._on_navigated)
@@ -39,20 +41,29 @@ class MyBrowser(wx.Dialog):
         """
         self.scheme_callbacks[scheme] = callback
 
+    # In some implementations we get EVT_WEBVIEW_NAVIGATING for our placeholder URL, in others EVT_WEBVIEW_NAVIGATED.
+    # Our use case is just to intercept whichever happens first -- there's no page to actually load, so we
+    # don't care about getting in at a particular time w.r.t. the page load.
+
     def _on_navigated(self, event):
         url = event.GetURL()
         if self._debug:
             print "NAVIGATED %r" % url
-        parsed = urlparse.urlparse(url)
-        scheme = parsed.scheme
-        callback = self.scheme_callbacks.get(scheme)
-        if callback is not None:
-            callback(url, parsed)
+        self._do_handle_event(url)
 
     def _on_navigating(self, event):
         url = event.GetURL()
         if self._debug:
             print "NAVIGATING %r" % url
+        self._do_handle_event(url)
+
+    def _do_handle_event(self, url):
+        parsed = urlparse.urlparse(url)
+        scheme = parsed.scheme
+        callback = self.scheme_callbacks.get(scheme)
+        if callback is not None and self.last_callback_url_and_parsed != (url, parsed):
+            self.last_callback_url_and_parsed = url, parsed
+            callback(url, parsed)
 
 
 def main():

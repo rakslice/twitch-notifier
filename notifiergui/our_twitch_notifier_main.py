@@ -43,12 +43,6 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         self.delayed_url_requests_by_id = {}
         """:type: dict[int, grequests.AsyncRequest]"""
 
-        self.cache_dir = appdirs.user_cache_dir("twitch-notifier", "rakslice")
-        if not os.path.exists(self.cache_dir):
-            os.makedirs(self.cache_dir)
-        self.cache_shelf_filename = os.path.join(self.cache_dir, "url_cached.dat")
-        self.cache_shelf = shelve.open(self.cache_shelf_filename)
-
     def cancel_delayed_url_loads_for_context(self, ctx):
         l = self.delayed_url_request_ids_by_context.pop(ctx, None)
         if l is not None:

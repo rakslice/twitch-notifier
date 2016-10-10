@@ -1,12 +1,15 @@
 import argparse
 import calendar
+import json
 import os
+import shelve
 import time
 import traceback
 import webbrowser
 
 import datetime
 # noinspection PyPackageRequirements
+import appdirs
 import twitch.queries
 # noinspection PyPackageRequirements
 import twitch.api.v3
@@ -14,9 +17,12 @@ import twitch.api.v3
 import twitch.keys
 
 import browser_auth
-import windows_10_toast_notifications
-import windows_lock_check
-
+try:
+    import windows_10_toast_notifications
+    import windows_lock_check
+except ImportError:
+    windows_10_toast_notifications = None
+    windows_lock_check = None
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 assets_path = os.path.join(script_path, "assets")
@@ -111,6 +117,20 @@ class TwitchNotifierMain(object):
         """:type: windows_10_toast_notifications.WindowsBalloonTip"""
         self.use_fast_query = False
 
+        self.cache_dir = appdirs.user_cache_dir("twitch-notifier", "rakslice")
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+        self.cache_shelf_filename = os.path.join(self.cache_dir, "url_cached.dat")
+        self.cache_shelf = shelve.open(self.cache_shelf_filename)
+
+        self.saved_config_filename = os.path.join(self.cache_dir, "config.json")
+
+        self.saved_config = None
+        self._load_saved_config()
+
+    def shutdown(self):
+        self.cache_shelf.close()
+
     def _init_notifier(self):
         options = self.options
         windows_balloon_tip_obj = windows_10_toast_notifications.WindowsBalloonTip(window_title="twitch-notifier",
@@ -146,8 +166,13 @@ class TwitchNotifierMain(object):
         self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message,
                                                  callback=callback)
 
-    def _auth_complete_callback(self, token):
+    def _auth_complete_callback(self, token, used_cached_auth=False):
         assert token is not None
+
+        if not used_cached_auth:
+            self.saved_config["oauth_token"] = (token, time.time())
+            self._write_saved_config()
+
         self._auth_oauth = token
         # get us a username
 
@@ -160,7 +185,17 @@ class TwitchNotifierMain(object):
         return self.options.browser_auth and self._auth_oauth is None
 
     def do_browser_auth(self):
-        browser_auth.do_browser(self._auth_complete_callback, debug=self.options.debug_output)
+        oauth_token = None
+        if "oauth_token" in self.saved_config:
+            oauth_token, oauth_token_timestamp = self.saved_config["oauth_token"]
+            token_age = time.time() - oauth_token_timestamp
+            if token_age > 60 * 60 * 24 * 30:
+                oauth_token = None
+
+        if oauth_token is not None:
+            self._auth_complete_callback(oauth_token, used_cached_auth=True)
+        else:
+            browser_auth.do_browser(self._auth_complete_callback, debug=self.options.debug_output)
 
     def main_loop(self):
         options = self.options
@@ -238,8 +273,12 @@ class TwitchNotifierMain(object):
             # Poll for twitch
             while True:
                 try:
-                    locked = windows_lock_check.check_if_locked()
-                    idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
+                    if windows_lock_check is None:
+                        locked = False
+                        idle = False
+                    else:
+                        locked = windows_lock_check.check_if_locked()
+                        idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
                     self.log("locked: %s idle: %s" % (locked, idle))
                     if locked or idle:
                         self.log("Locked, waiting for unlock")
@@ -349,6 +388,22 @@ class TwitchNotifierMain(object):
 
     def done_state_changes(self):
         pass
+
+    def _load_saved_config(self):
+        filename = self.saved_config_filename
+        if os.path.exists(filename):
+            try:
+                with open(filename, "r") as handle:
+                    self.saved_config = json.load(handle)
+            except Exception, e:
+                self.log("Error loading config: %r" % e)
+                self.saved_config = {}
+        else:
+            self.saved_config = {}
+
+    def _write_saved_config(self):
+        with open(self.saved_config_filename, "w") as handle:
+            json.dump(self.saved_config, handle)
 
 
 def main():
