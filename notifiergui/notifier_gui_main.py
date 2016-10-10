@@ -2,6 +2,7 @@ import os
 import sys
 import cStringIO
 import time
+import traceback
 
 # noinspection PyPackageRequirements
 import wx
@@ -18,6 +19,18 @@ from twitch_notifier_main import parse_args, time_desc, convert_iso_time
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 assets_path = os.path.join(script_path, "..", "assets")
+
+
+class NotificationQueueEntry(object):
+    def __init__(self, title, msg, callback):
+        """
+        :type title: unicode or None
+        :type msg: unicode
+        :type callback: function
+        """
+        self.title = title
+        self.msg = msg
+        self.callback = callback
 
 
 def show_image_in_wx_image(control, image_data):
@@ -38,20 +51,34 @@ def show_image_in_wx_image(control, image_data):
 
 
 class MainStatusWindowImpl(MainStatusWindow):
+    @staticmethod
+    def _get_asset_icon(subpath="icon.ico"):
+        the_icon = wx.EmptyIcon()
+        the_icon.CopyFromBitmap(wx.Bitmap(os.path.join(assets_path, subpath), wx.BITMAP_TYPE_ANY))
+        return the_icon
+
     def __init__(self, *args, **kwargs):
         super(MainStatusWindowImpl, self).__init__(*args, **kwargs)
         self.timer = None
         self.balloon_click_callback = None
         self.app = None
 
+        self.cur_timeout_timer = None
+
+        self.notifications_queue = []
+        """:type: list of NotificationQueueEntry"""
+        self.notifications_queue_in_progress = False
+
         self.toolbar_icon = wx.TaskBarIcon()
-        the_icon = wx.EmptyIcon()
-        the_icon.CopyFromBitmap(wx.Bitmap(os.path.join(assets_path, "icon.ico"), wx.BITMAP_TYPE_ANY))
+        the_icon = self._get_asset_icon()
 
         self.toolbar_icon.SetIcon(the_icon)
 
+        self.notification_icon = the_icon
+
         self.toolbar_icon.Bind(wx.EVT_TASKBAR_LEFT_DCLICK, self._on_toolbar_icon_left_dclick)
         self.toolbar_icon.Bind(wx.EVT_TASKBAR_BALLOON_CLICK, self._on_toolbar_balloon_click)
+        self.toolbar_icon.Bind(wx.EVT_TASKBAR_BALLOON_TIMEOUT, self._on_toolbar_balloon_timeout)
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
         options = parse_args()
@@ -60,10 +87,61 @@ class MainStatusWindowImpl(MainStatusWindow):
 
         self.base_logo_bitmap = self.bitmap_channel_logo.GetBitmap()
 
+    def set_timeout(self, time_ms, callback, args=None, kwargs=None):
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+        assert self.cur_timeout_timer is None
+        self.cur_timeout_timer = wx.Timer()
+
+        # noinspection PyUnusedLocal
+        def _on_timer_complete(event):
+            self.cur_timeout_timer.Stop()
+            self.cur_timeout_timer = None
+            try:
+                callback(*args, **kwargs)
+            except Exception, e:
+                print "set_timeout callback raised Exception"
+                traceback.print_exc()
+                self.main_obj.log("set_timeout callback raised Exception: %r" % e)
+
+        self.cur_timeout_timer.Bind(wx.EVT_TIMER, _on_timer_complete)
+        self.cur_timeout_timer.Start(time_ms)
+
+    def _dispense_remaining_notifications(self):
+        # hack to avoid double-triggering of events that happens
+        if len(self.notifications_queue) == 0:
+            self.notifications_queue_in_progress = False
+            return
+
+        self.notifications_queue_in_progress = True
+        # send a notification
+        notification = self.notifications_queue.pop(0)
+
+        self.set_balloon_click_callback(notification.callback)
+        icon = self.GetIcon()
+        self.toolbar_icon.ShowBalloon(notification.title, notification.msg, 0, icon.GetHandle())
+
+    # noinspection PyUnusedLocal
+    def _on_toolbar_balloon_timeout(self, event):
+        self.main_obj.log("notification timeout")
+        # ok, on to the next
+        # wx.CallAfter(self._dispense_remaining_notifications)
+        self.set_timeout(250, self._dispense_remaining_notifications)
+
     # noinspection PyUnusedLocal
     def _on_toolbar_balloon_click(self, event):
+        self.main_obj.log("notification clicked")
         if self.balloon_click_callback is not None:
-            self.balloon_click_callback()
+            try:
+                self.balloon_click_callback()
+            except Exception, e:
+                print "Balloon click callback raised exception"
+                traceback.print_exc()
+                self.main_obj.log("Balloon click callback raised exception: %r" % e)
+        # wx.CallAfter(self._dispense_remaining_notifications)
+        self.set_timeout(250, self._dispense_remaining_notifications)
 
     # noinspection PyUnusedLocal
     def _on_toolbar_icon_left_dclick(self, event):
@@ -187,6 +265,13 @@ class MainStatusWindowImpl(MainStatusWindow):
 
     def set_balloon_click_callback(self, callback):
         self.balloon_click_callback = callback
+
+    def enqueue_notification(self, title, msg, callback):
+        notification = NotificationQueueEntry(title, msg, callback)
+        self.notifications_queue.append(notification)
+        if not self.notifications_queue_in_progress:
+            # kick off the progress
+            self._dispense_remaining_notifications()
 
 
 def main():
