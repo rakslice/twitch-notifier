@@ -241,8 +241,12 @@ class TwitchNotifierMain(object):
             # Poll for twitch
             while True:
                 try:
-                    locked = windows_lock_check.check_if_locked()
-                    idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
+                    if windows_lock_check is None:
+                        locked = False
+                        idle = False
+                    else:
+                        locked = windows_lock_check.check_if_locked()
+                        idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
                     self.log("locked: %s idle: %s" % (locked, idle))
                     if locked or idle:
                         self.log("Locked, waiting for unlock")
