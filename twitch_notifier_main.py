@@ -14,9 +14,12 @@ import twitch.api.v3
 import twitch.keys
 
 import browser_auth
-import windows_10_toast_notifications
-import windows_lock_check
-
+try:
+    import windows_10_toast_notifications
+    import windows_lock_check
+except ImportError:
+    windows_10_toast_notifications = None
+    windows_lock_check = None
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 assets_path = os.path.join(script_path, "assets")
