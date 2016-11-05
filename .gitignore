@@ -3,3 +3,5 @@
 debug.log
 notifiergui/notifier_gui_codegen.py.bak
 notifiergui/notifier_gui.wxg.bak
+build/
+dist/

@@ -5,6 +5,7 @@ import time
 import traceback
 
 # noinspection PyPackageRequirements
+import datetime
 import wx
 
 cur = os.path.abspath(".")
@@ -17,7 +18,14 @@ from notifiergui.our_twitch_notifier_main import OurTwitchNotifierMain
 from notifiergui.notifier_gui_codegen import MainStatusWindow
 from twitch_notifier_main import parse_args, time_desc, convert_iso_time
 
-script_path = os.path.dirname(os.path.abspath(__file__))
+
+def root_file():
+    try:
+        return __file__
+    except NameError:
+        return sys.argv[0]
+
+script_path = os.path.dirname(os.path.abspath(root_file()))
 assets_path = os.path.join(script_path, "..", "assets")
 
 
@@ -255,17 +263,21 @@ class MainStatusWindowImpl(MainStatusWindow):
         self.app.ExitMainLoop()
         self.app = None
 
+    def _minor_log(self, msg):
+        line_item = u"%s: %s" % (datetime.datetime.now(), msg)
+        print line_item
+
     def set_timer_with_callback(self, time_s, callback, timer_id=100):
         assert self.timer is None
 
         # noinspection PyUnusedLocal
         def internal_callback(event):
-            print "timer hit"
+            self._minor_log("timer hit")
             self.timer.Stop()
             self.timer = None
             callback()
 
-        print "setting up timer for %d s" % time_s
+        self._minor_log("setting up timer for %d s" % time_s)
         self.timer = wx.Timer(self, timer_id)
         wx.EVT_TIMER(self, timer_id, internal_callback)
         self.timer.Start(time_s * 1000)
