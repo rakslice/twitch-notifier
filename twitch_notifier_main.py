@@ -65,6 +65,10 @@ def parse_args():
                         )
     parser.add_argument("--ui",
                         help="Use the wxpython UI")
+    parser.add_argument("--no-popups",
+                        dest="popups",
+                        default=True,
+                        action="store_false")
     return parser.parse_args()
 
 
@@ -165,8 +169,9 @@ class TwitchNotifierMain(object):
 
         self.log("Showing message: '%s'" % message.encode("utf-8"))
 
-        self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message,
-                                                 callback=callback)
+        if self.options.popups:
+            self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message,
+                                                     callback=callback)
 
     def _auth_complete_callback(self, token, used_cached_auth=False):
         assert token is not None
