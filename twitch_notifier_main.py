@@ -117,6 +117,8 @@ class TwitchNotifierMain(object):
         """:type: windows_10_toast_notifications.WindowsBalloonTip"""
         self.use_fast_query = False
 
+        self.need_channels_refresh = True
+
         self.cache_dir = appdirs.user_cache_dir("twitch-notifier", "rakslice")
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
@@ -212,11 +214,12 @@ class TwitchNotifierMain(object):
         for sleep_time, sleep_reason in self.main_loop_yielder():
             time.sleep(sleep_time)
 
+    def _channels_reload_complete(self):
+        pass
+
     def main_loop_yielder(self):
         options = self.options
         username = options.username
-
-        self._init_notifier()
 
         channels_followed = set()
         channel_info = {}
@@ -224,48 +227,7 @@ class TwitchNotifierMain(object):
 
         channels_followed_names = []
 
-        # first time querying
-
-        if self._auth_oauth is not None:
-            authorization = "OAuth %s" % self._auth_oauth
-            # noinspection PyProtectedMember
-            twitch.queries._v3_headers["Authorization"] = authorization
-            self.use_fast_query = True
-
-            if username is None:
-                root_response = twitch.api.v3.root()
-                username = root_response["token"]["user_name"]
-
-        notifications_disabled_for = []
-
-        for follow in paged_query_iterator(twitch.api.v3.follows.by_user, name=username, results_list_key='follows'):
-            channel = follow["channel"]
-            channel_id = channel["_id"]
-            channel_name = channel["display_name"]
-
-            notifications_enabled = follow["notifications"]
-            if options.all or notifications_enabled:
-
-                channels_followed.add(channel_id)
-                channels_followed_names.append(channel_name)
-                channel_info[channel_id] = channel
-
-            else:
-
-                notifications_disabled_for.append(channel_name)
-
-        followed_channel_entries = []
-
-        for channel_id in channels_followed:
-            followed_channel_entries.append(channel_info[channel_id])
-
-        followed_channel_entries.sort(key=lambda ch: ch["display_name"])
-
-        self.init_channel_display(followed_channel_entries)
-
-        print "Watching: %s" % ", ".join([self.channel_display_name(x) for x in followed_channel_entries])
-        if len(notifications_disabled_for) > 0:
-            print "Notifications disabled for: %s" % ", ".join(sorted(notifications_disabled_for))
+        self._init_notifier()
 
         # loop
 
@@ -273,6 +235,58 @@ class TwitchNotifierMain(object):
             # Poll for twitch
             while True:
                 try:
+                    if self.need_channels_refresh:
+                        self.need_channels_refresh = False
+                        channels_followed.clear()
+                        channel_info.clear()
+                        last_streams.clear()
+                        channels_followed_names[:] = []
+
+                        # first time querying
+
+                        if self._auth_oauth is not None:
+                            authorization = "OAuth %s" % self._auth_oauth
+                            # noinspection PyProtectedMember
+                            twitch.queries._v3_headers["Authorization"] = authorization
+                            self.use_fast_query = True
+
+                            if username is None:
+                                root_response = twitch.api.v3.root()
+                                username = root_response["token"]["user_name"]
+
+                        notifications_disabled_for = []
+
+                        for follow in paged_query_iterator(twitch.api.v3.follows.by_user, name=username, results_list_key='follows'):
+                            channel = follow["channel"]
+                            channel_id = channel["_id"]
+                            channel_name = channel["display_name"]
+
+                            notifications_enabled = follow["notifications"]
+                            if options.all or notifications_enabled:
+
+                                channels_followed.add(channel_id)
+                                channels_followed_names.append(channel_name)
+                                channel_info[channel_id] = channel
+
+                            else:
+
+                                notifications_disabled_for.append(channel_name)
+
+                        followed_channel_entries = []
+
+                        for channel_id in channels_followed:
+                            followed_channel_entries.append(channel_info[channel_id])
+
+                        followed_channel_entries.sort(key=lambda ch: ch["display_name"])
+
+                        self.init_channel_display(followed_channel_entries)
+
+                        print "Watching: %s" % ", ".join([self.channel_display_name(x) for x in followed_channel_entries])
+                        if len(notifications_disabled_for) > 0:
+                            print "Notifications disabled for: %s" % ", ".join(sorted(notifications_disabled_for))
+
+                        self._channels_reload_complete()
+
                     if windows_lock_check is None:
                         locked = False
                         idle = False

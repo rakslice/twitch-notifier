@@ -30,6 +30,7 @@ class MainStatusWindow(wx.Frame):
         self.label_3 = wx.StaticText(self, -1, "Log")
         self.list_log = wx.ListBox(self, -1, choices=[])
         self.button_options = wx.Button(self, -1, "&Options")
+        self.button_reload_channels = wx.Button(self, -1, "&Reload Channels")
         self.button_quit = wx.Button(self, -1, "&Quit")
         self.label_status = wx.StaticText(self, -1, "Status")
 
@@ -41,6 +42,7 @@ class MainStatusWindow(wx.Frame):
         self.Bind(wx.EVT_LISTBOX_DCLICK, self._on_list_offline_dclick, self.list_offline)
         self.Bind(wx.EVT_LISTBOX, self._on_list_offline_gen, self.list_offline)
         self.Bind(wx.EVT_BUTTON, self._on_options_button_click, self.button_options)
+        self.Bind(wx.EVT_BUTTON, self._on_button_reload_channels_click, self.button_reload_channels)
         self.Bind(wx.EVT_BUTTON, self._on_button_quit, self.button_quit)
         # end wxGlade
 
@@ -91,6 +93,7 @@ class MainStatusWindow(wx.Frame):
         sizer_1.Add(self.label_3, 0, wx.EXPAND, 0)
         sizer_1.Add(self.list_log, 0, wx.EXPAND, 0)
         sizer_2.Add(self.button_options, 0, 0, 0)
+        sizer_2.Add(self.button_reload_channels, 0, 0, 0)
         sizer_2.Add((20, 20), 1, wx.EXPAND, 0)
         sizer_2.Add(self.button_quit, 0, 0, 0)
         sizer_1.Add(sizer_2, 0, wx.EXPAND, 0)
@@ -121,6 +124,14 @@ class MainStatusWindow(wx.Frame):
 
     def _on_list_offline_gen(self, event): # wxGlade: MainStatusWindow.<event_handler>
         print "Event handler `_on_list_offline_gen' not implemented"
+        event.Skip()
+
+    def _on_button_refresh_channels_click(self, event): # wxGlade: MainStatusWindow.<event_handler>
+        print "Event handler `_on_button_refresh_channels_click' not implemented"
+        event.Skip()
+
+    def _on_button_reload_channels_click(self, event): # wxGlade: MainStatusWindow.<event_handler>
+        print "Event handler `_on_button_reload_channels_click' not implemented"
         event.Skip()
 
 # end of class MainStatusWindow

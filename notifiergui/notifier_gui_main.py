@@ -60,6 +60,7 @@ class MainStatusWindowImpl(MainStatusWindow):
     def __init__(self, *args, **kwargs):
         super(MainStatusWindowImpl, self).__init__(*args, **kwargs)
         self.timer = None
+        self.timer_callback = None
         self.balloon_click_callback = None
         self.app = None
 
@@ -247,6 +248,16 @@ class MainStatusWindowImpl(MainStatusWindow):
     def _on_list_offline_dclick(self, event):
         self.main_obj.open_site_for_list_entry(False, event.GetInt())
 
+    def _on_button_reload_channels_click(self, event):
+        self.main_obj.do_channels_reload()
+
+    def set_channel_refresh_in_progress(self, value):
+        if value:
+            # True -- refresh in progress
+            self.button_reload_channels.Disable()
+        else:
+            self.button_reload_channels.Enable()
+
     def _on_button_quit(self, event):
         self.toolbar_icon.RemoveIcon()
         self.toolbar_icon.Destroy()
@@ -255,18 +266,33 @@ class MainStatusWindowImpl(MainStatusWindow):
         self.app.ExitMainLoop()
         self.app = None
 
+    def cancel_timer_callback_immediate(self):
+        if self.timer is None:
+            return False
+        self.timer.Stop()
+        self.timer = None
+        # self._minor_log("timer cancelled")
+        cur_callback = self.timer_callback
+        self.timer_callback = None
+        cur_callback()
+        return True
+
     def set_timer_with_callback(self, time_s, callback, timer_id=100):
         assert self.timer is None
+        assert self.timer_callback is None
 
         # noinspection PyUnusedLocal
         def internal_callback(event):
             print "timer hit"
             self.timer.Stop()
             self.timer = None
-            callback()
+            cur_callback = self.timer_callback
+            self.timer_callback = None
+            cur_callback()
 
         print "setting up timer for %d s" % time_s
         self.timer = wx.Timer(self, timer_id)
+        self.timer_callback = callback
         wx.EVT_TIMER(self, timer_id, internal_callback)
         self.timer.Start(time_s * 1000)
 

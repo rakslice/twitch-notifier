@@ -161,6 +161,7 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
                 self.previously_online_streams.add(channel_id)
 
     def reset_lists(self):
+        self.window_impl.list_online.Clear()
         self.window_impl.list_offline.Clear()
         self.channel_status_by_id.clear()
         for i, channel in enumerate(self.followed_channel_entries):
@@ -250,3 +251,14 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
             return
 
         webbrowser.open(url)
+
+    def do_channels_reload(self):
+        self.need_channels_refresh = True
+        self.window_impl.set_channel_refresh_in_progress(True)
+
+        # If there is a main loop timer wait in progress we want to cancel it and do the next main
+        # loop iteration right away
+        self.window_impl.cancel_timer_callback_immediate()
+
+    def _channels_reload_complete(self):
+        self.window_impl.set_channel_refresh_in_progress(False)
