@@ -224,7 +224,6 @@ class TwitchNotifierMain(object):
 
     def main_loop_yielder(self):
         options = self.options
-        username = options.username
 
         channels_followed = set()
         channel_info = {}
@@ -255,13 +254,13 @@ class TwitchNotifierMain(object):
                             twitch.queries._v3_headers["Authorization"] = authorization
                             self.use_fast_query = True
 
-                            if username is None:
+                            if options.username is None:
                                 root_response = twitch.api.v3.root()
-                                username = root_response["token"]["user_name"]
+                                options.username = root_response["token"]["user_name"]
 
                         notifications_disabled_for = []
 
-                        for follow in paged_query_iterator(twitch.api.v3.follows.by_user, name=username, results_list_key='follows'):
+                        for follow in paged_query_iterator(twitch.api.v3.follows.by_user, name=options.username, results_list_key='follows'):
                             channel = follow["channel"]
                             channel_id = channel["_id"]
                             channel_name = channel["display_name"]

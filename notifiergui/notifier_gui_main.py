@@ -14,7 +14,7 @@ if cur not in sys.path:
 
 # These have to go after the path correction
 from notifiergui.our_twitch_notifier_main import OurTwitchNotifierMain
-from notifiergui.notifier_gui_codegen import MainStatusWindow
+from notifiergui.notifier_gui_codegen import MainStatusWindow, OptionsWindow
 from twitch_notifier_main import parse_args, time_desc, convert_iso_time
 
 script_path = os.path.dirname(os.path.abspath(__file__))
@@ -258,6 +258,9 @@ class MainStatusWindowImpl(MainStatusWindow):
         else:
             self.button_reload_channels.Enable()
 
+    def _on_options_button_click(self, event):
+        open_options(self, self.main_obj)
+
     def _on_button_quit(self, event):
         self.toolbar_icon.RemoveIcon()
         self.toolbar_icon.Destroy()
@@ -305,6 +308,82 @@ class MainStatusWindowImpl(MainStatusWindow):
         if not self.notifications_queue_in_progress:
             # kick off the progress
             self._dispense_remaining_notifications()
+
+
+class OptionsWindowImpl(OptionsWindow):
+    def __init__(self, main_app, *args, **kwargs):
+        self.main_app = main_app
+        super(OptionsWindowImpl, self).__init__(*args, **kwargs)
+        self.set_from_options(main_app.options)
+        self.update_enabledness()
+
+    def set_from_options(self, options):
+        self.text_poll_interval.Value = str(options.poll)
+
+        if options.username is not None:
+            self.text_username.value = options.username
+        else:
+            self.text_username.Value = ""
+
+        if options.authorization_oauth is not None:
+            self.text_oauth.Value = options.authorization_oauth
+        else:
+            self.text_oauth.Value = ""
+
+        if not options.browser_auth:
+            # auth None
+            self.radio_btn_auth_none.Value = True
+        elif options.authorization_oauth is not None:
+            # auth Token if token is set, else auth web
+            self.radio_btn_auth_token.Value = True
+        else:
+            self.radio_btn_auth_web.Value = True
+
+    def save_into_options(self, options):
+        if self.radio_btn_auth_web.Value:
+            options.username = None
+            options.browser_auth = True
+        elif self.radio_btn_auth_token.Value:
+            options.username = None
+            options.browser_auth = False
+        elif self.radio_btn_auth_none.Value:
+            options.username = self.text_username.Value
+            options.browser_auth = False
+        else:
+            assert False
+
+        options.poll = int(self.text_poll_interval.Value)
+
+        # TODO also persist somewhere
+
+    def on_button_cancel_click(self, event):
+        self.Hide()
+
+    def on_button_ok_click(self, event):
+        self.save_into_options(self.main_app.options)
+        self.Hide()
+        self.main_app.options_updated()
+        self.main_app = None
+
+    def update_enabledness(self):
+        self.text_username.Enabled = self.radio_btn_auth_none.Value
+
+        self.text_oauth.Enabled = self.radio_btn_auth_token.Value
+
+    def on_radio_btn_auth_change(self, event):
+        self.update_enabledness()
+
+
+def open_options(main_window, main_app):
+    assert isinstance(main_app, OurTwitchNotifierMain)
+    assert isinstance(main_window, MainStatusWindowImpl)
+    dialog_options = OptionsWindowImpl(main_app, parent=main_window, title="Options")
+    #     """
+    # __init__(self, Window parent, int id=-1, String title=EmptyString,
+    #     Point pos=DefaultPosition, Size size=DefaultSize,
+    #     long style=DEFAULT_FRAME_STYLE, String name=FrameNameStr) -> Frame
+    # """
+    dialog_options.ShowModal()
 
 
 def main():

@@ -262,3 +262,7 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
 
     def _channels_reload_complete(self):
         self.window_impl.set_channel_refresh_in_progress(False)
+
+    def options_updated(self):
+        self._auth_oauth = None
+        self.do_channels_reload()

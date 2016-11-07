@@ -9,6 +9,90 @@ import wx
 
 
 
+class OptionsWindow(wx.Dialog):
+    def __init__(self, *args, **kwds):
+        # begin wxGlade: OptionsWindow.__init__
+        kwds["style"] = wx.DEFAULT_DIALOG_STYLE
+        wx.Dialog.__init__(self, *args, **kwds)
+        self.sizer_10_staticbox = wx.StaticBox(self, -1, "Authentication")
+        self.sizer_9_staticbox = wx.StaticBox(self, -1, "Options")
+        self.label_5 = wx.StaticText(self, -1, "Poll Interval (seconds)")
+        self.text_poll_interval = wx.TextCtrl(self, -1, "")
+        self.radio_btn_auth_web = wx.RadioButton(self, -1, "Twitch Web Login", style=wx.RB_GROUP)
+        self.radio_btn_auth_none = wx.RadioButton(self, -1, "None - use public follows for a user")
+        self.label_8 = wx.StaticText(self, -1, "Username")
+        self.text_username = wx.TextCtrl(self, -1, "")
+        self.radio_btn_auth_token = wx.RadioButton(self, -1, "Login with previously created OAuth token")
+        self.label_oauth = wx.StaticText(self, -1, "OAuth")
+        self.text_oauth = wx.TextCtrl(self, -1, "")
+        self.button_ok = wx.Button(self, -1, "&OK")
+        self.button_cancel = wx.Button(self, -1, "&Cancel")
+
+        self.__set_properties()
+        self.__do_layout()
+
+        self.Bind(wx.EVT_RADIOBUTTON, self.on_radio_btn_auth_change, self.radio_btn_auth_web)
+        self.Bind(wx.EVT_RADIOBUTTON, self.on_radio_btn_auth_change, self.radio_btn_auth_none)
+        self.Bind(wx.EVT_RADIOBUTTON, self.on_radio_btn_auth_change, self.radio_btn_auth_token)
+        self.Bind(wx.EVT_BUTTON, self.on_button_ok_click, self.button_ok)
+        self.Bind(wx.EVT_BUTTON, self.on_button_cancel_click, self.button_cancel)
+        # end wxGlade
+
+    def __set_properties(self):
+        # begin wxGlade: OptionsWindow.__set_properties
+        self.SetTitle("Options")
+        self.text_poll_interval.SetToolTipString("Time between polls for stream changes")
+        self.text_oauth.SetToolTipString("Enter a token to use with Authentication: OAuth header (e.g. from https://twitchapps.com/tmi/)")
+        # end wxGlade
+
+    def __do_layout(self):
+        # begin wxGlade: OptionsWindow.__do_layout
+        sizer_4 = wx.BoxSizer(wx.VERTICAL)
+        sizer_14 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_10 = wx.StaticBoxSizer(self.sizer_10_staticbox, wx.VERTICAL)
+        sizer_13 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_12 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_9 = wx.StaticBoxSizer(self.sizer_9_staticbox, wx.VERTICAL)
+        sizer_11 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_11.Add(self.label_5, 0, wx.EXPAND, 0)
+        sizer_11.Add(self.text_poll_interval, 0, wx.EXPAND, 0)
+        sizer_9.Add(sizer_11, 1, wx.EXPAND, 0)
+        sizer_4.Add(sizer_9, 0, wx.EXPAND, 0)
+        sizer_10.Add(self.radio_btn_auth_web, 0, 0, 0)
+        sizer_10.Add(self.radio_btn_auth_none, 0, 0, 0)
+        sizer_12.Add(self.label_8, 0, 0, 0)
+        sizer_12.Add(self.text_username, 1, 0, 0)
+        sizer_10.Add(sizer_12, 0, wx.EXPAND, 0)
+        sizer_10.Add(self.radio_btn_auth_token, 0, 0, 0)
+        sizer_13.Add(self.label_oauth, 0, 0, 0)
+        sizer_13.Add(self.text_oauth, 1, 0, 0)
+        sizer_10.Add(sizer_13, 0, wx.EXPAND, 0)
+        sizer_4.Add(sizer_10, 0, wx.EXPAND, 0)
+        sizer_4.Add((20, 20), 1, wx.EXPAND, 0)
+        sizer_14.Add(self.button_ok, 0, wx.EXPAND, 0)
+        sizer_14.Add((20, 20), 1, wx.EXPAND, 0)
+        sizer_14.Add(self.button_cancel, 0, 0, 0)
+        sizer_4.Add(sizer_14, 0, wx.EXPAND, 0)
+        self.SetSizer(sizer_4)
+        sizer_4.Fit(self)
+        self.Layout()
+        # end wxGlade
+
+    def on_radio_btn_auth_change(self, event): # wxGlade: OptionsWindow.<event_handler>
+        print "Event handler `on_radio_btn_auth_change' not implemented"
+        event.Skip()
+
+    def on_button_ok_click(self, event): # wxGlade: OptionsWindow.<event_handler>
+        print "Event handler `on_button_ok_click' not implemented"
+        event.Skip()
+
+    def on_button_cancel_click(self, event): # wxGlade: OptionsWindow.<event_handler>
+        print "Event handler `on_button_cancel_click' not implemented"
+        event.Skip()
+
+# end of class OptionsWindow
+
+
 class MainStatusWindow(wx.Frame):
     def __init__(self, *args, **kwds):
         # begin wxGlade: MainStatusWindow.__init__
@@ -62,7 +146,6 @@ class MainStatusWindow(wx.Frame):
         self.label_start_time.SetBackgroundColour(wx.Colour(240, 240, 240))
         self.list_online.SetToolTipString("Double-Click to open stream page")
         self.list_offline.SetToolTipString("Double-Click to open channel page")
-        self.button_options.Enable(False)
         # end wxGlade
 
     def __do_layout(self):
