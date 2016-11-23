@@ -1,13 +1,10 @@
 import functools
-import os
-import shelve
 import traceback
 import webbrowser
 import time
 
 import datetime
 
-import appdirs
 import grequests
 
 import requests
@@ -84,7 +81,7 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
                 self.cache_shelf.sync()
         except Exception, e:
             traceback.print_exc()
-            self.log("Exception %r" % e)
+            self.log(u"Exception %r" % e)
 
     def do_delayed_url_load(self, ctx, url, callback):
         # look for a cache entry
@@ -145,6 +142,8 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         self.window_impl.set_timer_with_callback(time_s, self.set_next_time)
 
     def log(self, msg):
+        """:type msg: unicode"""
+        assert isinstance(msg, unicode)
         line_item = u"%s: %s" % (datetime.datetime.now(), msg)
         self.window_impl.list_log.Append(line_item)
 
@@ -235,7 +234,7 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
                 stream = self.stream_by_channel_id[channel_id]
             channel = self._channel_for_id(channel_id)
             if channel is None:
-                self.log("Channel entry not found for id %r" % channel_id)
+                self.log(u"Channel entry not found for id %r" % channel_id)
 
         return channel, stream
 
@@ -247,7 +246,7 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         elif channel is not None:
             url = channel["url"]
         else:
-            self.log("Channel is none somehow")
+            self.log(u"Channel is none somehow")
             return
 
         webbrowser.open(url)

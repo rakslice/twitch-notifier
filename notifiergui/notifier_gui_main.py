@@ -105,7 +105,7 @@ class MainStatusWindowImpl(MainStatusWindow):
             except Exception, e:
                 print "set_timeout callback raised Exception"
                 traceback.print_exc()
-                self.main_obj.log("set_timeout callback raised Exception: %r" % e)
+                self.main_obj.log(u"set_timeout callback raised Exception: %r" % e)
 
         self.cur_timeout_timer.Bind(wx.EVT_TIMER, _on_timer_complete)
         self.cur_timeout_timer.Start(time_ms)
@@ -133,21 +133,21 @@ class MainStatusWindowImpl(MainStatusWindow):
 
     # noinspection PyUnusedLocal
     def _on_toolbar_balloon_timeout(self, event):
-        self.main_obj.log("notification timeout")
+        self.main_obj.log(u"notification timeout")
         # ok, on to the next
         # wx.CallAfter(self._dispense_remaining_notifications)
         self.set_timeout(250, self._dispense_remaining_notifications)
 
     # noinspection PyUnusedLocal
     def _on_toolbar_balloon_click(self, event):
-        self.main_obj.log("notification clicked")
+        self.main_obj.log(u"notification clicked")
         if self.balloon_click_callback is not None:
             try:
                 self.balloon_click_callback()
             except Exception, e:
                 print "Balloon click callback raised exception"
                 traceback.print_exc()
-                self.main_obj.log("Balloon click callback raised exception: %r" % e)
+                self.main_obj.log(u"Balloon click callback raised exception: %r" % e)
         # wx.CallAfter(self._dispense_remaining_notifications)
         self.set_timeout(250, self._dispense_remaining_notifications)
 
@@ -216,15 +216,15 @@ class MainStatusWindowImpl(MainStatusWindow):
             def _on_logo_load(rs, **kwargs):
                 """:type rs: requests.Response"""
                 if not rs.status_code == 200:
-                    self.main_obj.log("Got HTTP error %d %s retrieving %s" % (rs.status_code, rs.reason, logo_url))
+                    self.main_obj.log(u"Got HTTP error %d %s retrieving %s" % (rs.status_code, rs.reason, logo_url))
                     return
-                self.main_obj.log("Logo loaded")
+                self.main_obj.log(u"Logo loaded")
                 content_type = rs.headers["Content-type"]
                 # TODO verify content type
                 data = rs.content
                 show_image_in_wx_image(self.bitmap_channel_logo, data)
 
-            self.main_obj.log("Showing logo %s" % logo_url)
+            self.main_obj.log(u"Showing logo %s" % logo_url)
             self.main_obj.do_delayed_url_load("channel", logo_url, _on_logo_load)
 
     def _on_list_online_gen(self, event):
