@@ -8,8 +8,8 @@ import traceback
 import webbrowser
 
 import datetime
-# noinspection PyPackageRequirements
 import appdirs
+# noinspection PyPackageRequirements
 import twitch.queries
 # noinspection PyPackageRequirements
 import twitch.api.v3

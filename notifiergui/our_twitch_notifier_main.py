@@ -1,13 +1,10 @@
 import functools
-import os
-import shelve
 import traceback
 import webbrowser
 import time
 
 import datetime
 
-import appdirs
 import grequests
 
 import requests
