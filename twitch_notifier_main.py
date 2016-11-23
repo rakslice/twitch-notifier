@@ -167,7 +167,7 @@ class TwitchNotifierMain(object):
             print "notification for %s clicked" % channel_name
             webbrowser.open(stream_browser_link)
 
-        self.log("Showing message: '%s'" % message.encode("utf-8"))
+        self.log(u"Showing message: '%s'" % message)
 
         if self.options.popups:
             self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message,
@@ -298,16 +298,16 @@ class TwitchNotifierMain(object):
                     else:
                         locked = windows_lock_check.check_if_locked()
                         idle = windows_lock_check.check_if_idle(threshold_s=options.idle)
-                    self.log("locked: %s idle: %s" % (locked, idle))
+                    self.log(u"locked: %s idle: %s" % (locked, idle))
                     if locked or idle:
-                        self.log("Locked, waiting for unlock")
+                        self.log(u"Locked, waiting for unlock")
                         while windows_lock_check.check_if_locked() or windows_lock_check.check_if_idle(threshold_s=options.idle):
                             yield 5, "waiting for unlock"
                         if options.unlock_notify:
-                            self.log("Clearing last streams to renotify")
+                            self.log(u"Clearing last streams to renotify")
                             last_streams = {}
 
-                    self.log("Checking for follow stream changes")
+                    self.log(u"Checking for follow stream changes")
 
                     if self.use_fast_query:
                         self.assume_all_streams_offline()
@@ -330,17 +330,17 @@ class TwitchNotifierMain(object):
                             last_streams[channel_id] = stream_id
                         else:
                             if stream is None:
-                                self.log("channel_id %r had stream None" % channel_id)
+                                self.log(u"channel_id %r had stream None" % channel_id)
                             else:
-                                self.log("channel_id %r is_playlist %r" % (channel_id, stream["is_playlist"]))
+                                self.log(u"channel_id %r is_playlist %r" % (channel_id, stream["is_playlist"]))
                             last_streams[channel_id] = None
 
                     self.done_state_changes()
                 except Exception, e:
                     traceback.print_exc()
-                    self.log(repr(e))
+                    self.log(repr(e).decode("ascii"))
 
-                self.log("Waiting %s s for next poll" % options.poll)
+                self.log(u"Waiting %s s for next poll" % options.poll)
                 sleep_until_next_poll_s = max(options.poll, 60)
                 yield sleep_until_next_poll_s, "waiting until another poll is allowed"
         except (KeyboardInterrupt, Exception):
@@ -348,8 +348,11 @@ class TwitchNotifierMain(object):
             raise
 
     def log(self, msg):
+        """:type msg: unicode"""
+        assert isinstance(msg, unicode)
         if self.options.debug_output:
-            print "%s TwitchNotifierMain: %s" % (datetime.datetime.now(), msg)
+            output_line = u"%s TwitchNotifierMain: %s" % (datetime.datetime.now(), msg)
+            print output_line.encode("utf-8")
 
     def get_streams_channels_iterating(self, channel_info, channels_followed):
         """
@@ -362,7 +365,7 @@ class TwitchNotifierMain(object):
             original_channel = channel_info[channel_id]
             channel_name = original_channel["display_name"]
 
-            self.log("twitch.api.v3.streams.by_channel(%r)" % channel_name)
+            self.log(u"twitch.api.v3.streams.by_channel(%r)" % channel_name)
             response = twitch.api.v3.streams.by_channel(channel_name)
 
             stream = response["stream"]
@@ -379,7 +382,7 @@ class TwitchNotifierMain(object):
         :return: generator that yields (channel_id, channel, stream) for each stream
         """
 
-        self.log("twitch streams/followed(live)")
+        self.log(u"twitch streams/followed(live)")
         query = twitch_streams_followed(STREAM_TYPE_LIVE)
         response = query.execute()
         for stream in response['streams']:
@@ -388,7 +391,7 @@ class TwitchNotifierMain(object):
             channel_id = channel['_id']
             if channel_id not in followed_channels:
                 # skip channels that are here because they're being hosted by another channel
-                self.log("skipping channel_id %r because it's not a followed channel" % channel_id)
+                self.log(u"skipping channel_id %r because it's not a followed channel" % channel_id)
                 continue
             yield channel_id, channel, stream
 
@@ -415,7 +418,7 @@ class TwitchNotifierMain(object):
                 with open(filename, "r") as handle:
                     self.saved_config = json.load(handle)
             except Exception, e:
-                self.log("Error loading config: %r" % e)
+                self.log(u"Error loading config: %r" % e)
                 self.saved_config = {}
         else:
             self.saved_config = {}
