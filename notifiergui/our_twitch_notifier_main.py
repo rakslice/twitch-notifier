@@ -40,6 +40,8 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         self.delayed_url_requests_by_id = {}
         """:type: dict[int, grequests.AsyncRequest]"""
 
+        self.need_relayout = False
+
     def cancel_delayed_url_loads_for_context(self, ctx):
         l = self.delayed_url_request_ids_by_context.pop(ctx, None)
         if l is not None:
@@ -212,11 +214,20 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
             channel_status["online"] = new_online
             channel_status["idx"] = new_index
 
+            self.log(u"set flag for re-layout")
+            self.need_relayout = True
+
     def done_state_changes(self):
         streams_that_went_offline = list(self.previously_online_streams)
         for channel_id in streams_that_went_offline:
             self.stream_state_change(channel_id, new_online=False, stream=None)
         self.previously_online_streams.clear()
+
+        if self.need_relayout:
+            self.log(u"Re-layout")
+            sizer = self.window_impl.GetSizer()
+            sizer.Layout()
+            self.need_relayout = False
 
     def _get_channel_id_for_list_entry(self, is_online, index):
         for channel_id, cur_status in self.channel_status_by_id.iteritems():
