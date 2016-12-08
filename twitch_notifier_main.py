@@ -173,11 +173,11 @@ class TwitchNotifierMain(object):
             self.windows_balloon_tip_obj.balloon_tip("twitch-notifier", message,
                                                      callback=callback)
 
-    def _auth_complete_callback(self, token, used_cached_auth=False):
+    def _auth_complete_callback(self, scopes, token, used_cached_auth=False):
         assert token is not None
 
         if not used_cached_auth:
-            self.saved_config["oauth_token"] = (token, time.time())
+            self.saved_config["oauth_token"] = (token, time.time(), scopes)
             self._write_saved_config()
 
         self._auth_oauth = token
@@ -193,16 +193,24 @@ class TwitchNotifierMain(object):
 
     def do_browser_auth(self):
         oauth_token = None
+        scopes_needed = ["user_read"]
+        saved_scopes = []
         if "oauth_token" in self.saved_config:
-            oauth_token, oauth_token_timestamp = self.saved_config["oauth_token"]
+            saved_config_oauth_entry = self.saved_config["oauth_token"]
+            if len(saved_config_oauth_entry) == 2:
+                oauth_token, oauth_token_timestamp = saved_config_oauth_entry
+            elif len(saved_config_oauth_entry) == 3:
+                oauth_token, oauth_token_timestamp, saved_scopes = saved_config_oauth_entry
+            else:
+                assert False, "unknown saved oauth_token length"
             token_age = time.time() - oauth_token_timestamp
             if token_age > 60 * 60 * 24 * 30:
                 oauth_token = None
 
-        if oauth_token is not None:
-            self._auth_complete_callback(oauth_token, used_cached_auth=True)
+        if oauth_token is not None and saved_scopes == scopes_needed:
+            self._auth_complete_callback(saved_scopes, oauth_token, used_cached_auth=True)
         else:
-            browser_auth.do_browser(self._auth_complete_callback, debug=self.options.debug_output)
+            browser_auth.do_browser(lambda *args: self._auth_complete_callback(scopes_needed, *args), scopes=scopes_needed, debug=self.options.debug_output)
 
     def main_loop(self):
         options = self.options

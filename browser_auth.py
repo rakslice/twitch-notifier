@@ -70,9 +70,21 @@ def main():
     do_browser()
 
 
-def do_browser(token_callback=None, debug=True):
+def do_browser(token_callback=None, scopes=None, debug=True):
+    """
+    Do a twitch web-based login in a standalone wx.App and call the given callback function with the token
+    :type token_callback: func(str)
+    :param scopes: list of oauth scopes that will be used with the authentication token.
+    Consult the twitch API documentation to see what scopes are required for different APIs.
+    The list of permissions that the user will see on the may vary depending on what scopes you request.
+    :type scopes: list of str
+    :param debug: bool
+    """
     app = wx.App()
     dialog = MyBrowser(debug, None, -1)
+
+    if scopes is None:
+        scopes = []
 
     def o_shi_whaddyup(url, parsed):
         assert isinstance(parsed, urlparse.ParseResult)
@@ -98,7 +110,7 @@ def do_browser(token_callback=None, debug=True):
 
     redirect_uri = "notifier://main"
 
-    auth_url = get_auth_url(CLIENT_ID, redirect_uri, [])
+    auth_url = get_auth_url(CLIENT_ID, redirect_uri, scopes)
 
     dialog.browser.LoadURL(auth_url)
     dialog.Show()
