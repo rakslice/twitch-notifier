@@ -242,6 +242,9 @@ class TwitchNotifierMain(object):
     def _channels_reload_complete(self):
         pass
 
+    def partnered_changed(self, channel, prev_partnered, new_partnered):
+        pass
+
     def main_loop_yielder(self):
         options = self.options
         username = options.username
@@ -271,9 +274,11 @@ class TwitchNotifierMain(object):
                         self.last_refresh_time = cur_time
 
                     if self.need_channels_refresh:
+                        old_channel_info = channel_info
+
                         self.need_channels_refresh = False
                         channels_followed.clear()
-                        channel_info.clear()
+                        channel_info = {}
                         last_streams.clear()
                         channels_followed_names[:] = []
 
@@ -295,6 +300,15 @@ class TwitchNotifierMain(object):
                             channel = follow["channel"]
                             channel_id = channel["_id"]
                             channel_name = channel["display_name"]
+
+                            if old_channel_info:
+                                prev_channel = old_channel_info.get(channel_id)
+                                if prev_channel:
+                                    prev_partnered = prev_channel["partner"]
+                                    new_partnered = channel["partner"]
+                                    partnered_changed = True
+                                    if partnered_changed:
+                                        self.partnered_changed(channel, prev_partnered, new_partnered)
 
                             notifications_enabled = follow["notifications"]
                             if options.all or notifications_enabled:

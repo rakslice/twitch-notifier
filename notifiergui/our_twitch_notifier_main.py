@@ -12,6 +12,8 @@ import requests
 from notifiergui.our_windows_balloon_tip import OurWindowsBalloonTip
 from twitch_notifier_main import TwitchNotifierMain
 
+import wx
+
 
 class FakeResponse(object):
     def __init__(self):
@@ -119,6 +121,10 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         request.send()
 
         return request
+
+    def partnered_changed(self, channel, prev_partnered, new_partnered):
+        channel_name = channel["display_name"]
+        wx.MessageBox("Channel %s partnered changed from %s to %s!!!!!" % (channel_name, prev_partnered, new_partnered))
 
     def main_loop_main_window_timer(self):
         if self.need_browser_auth():
