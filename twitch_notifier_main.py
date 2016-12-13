@@ -50,6 +50,11 @@ def parse_args():
                         help="idle time threshold to consider locked (seconds)",
                         type=int,
                         default=300)
+    parser.add_argument("--no-idle",
+                        help="disable idle check",
+                        dest="do_idle_check",
+                        default=True,
+                        action="store_false")
     parser.add_argument("--no-unlock-notify",
                         dest="unlock_notify",
                         help="Don't notify again on unlock",
@@ -300,7 +305,7 @@ class TwitchNotifierMain(object):
 
                         self._channels_reload_complete()
 
-                    if windows_lock_check is None:
+                    if windows_lock_check is None or not options.do_idle_check:
                         locked = False
                         idle = False
                     else:
