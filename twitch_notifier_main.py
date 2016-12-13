@@ -279,7 +279,6 @@ class TwitchNotifierMain(object):
                         self.need_channels_refresh = False
                         channels_followed.clear()
                         channel_info = {}
-                        last_streams.clear()
                         channels_followed_names[:] = []
 
                         # first time querying
