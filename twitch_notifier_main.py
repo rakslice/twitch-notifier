@@ -306,7 +306,7 @@ class TwitchNotifierMain(object):
                                 if prev_channel:
                                     prev_partnered = prev_channel["partner"]
                                     new_partnered = channel["partner"]
-                                    partnered_changed = True
+                                    partnered_changed = prev_partnered != new_partnered
                                     if partnered_changed:
                                         self.partnered_changed(channel, prev_partnered, new_partnered)
 
