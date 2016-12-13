@@ -42,6 +42,12 @@ def parse_args():
                         type=int,
                         default=60
                         )
+    parser.add_argument("--channel-refresh-time",
+                        dest="channel_refresh_time_mins",
+                        help="Time in minutes between automatic refreshes of the channels list",
+                        type=int,
+                        default=60
+                        )
     parser.add_argument("--all",
                         help="Watch all followed streams, not just ones with notifications enabled",
                         default=False,
@@ -120,6 +126,7 @@ def convert_iso_time(iso_time):
 
 class TwitchNotifierMain(object):
     def __init__(self, options):
+        self.last_refresh_time = time.time()
         self.options = options
         self._auth_oauth = None
         self.windows_balloon_tip_obj = None
@@ -253,6 +260,16 @@ class TwitchNotifierMain(object):
             # Poll for twitch
             while True:
                 try:
+                    cur_time = time.time()
+                    elapsed_since_last = cur_time - self.last_refresh_time
+                    channel_refresh_time_mins = self.options.channel_refresh_time_mins
+                    assert channel_refresh_time_mins >= 1
+                    if elapsed_since_last >= channel_refresh_time_mins * 60:
+                        self.log(u"time for a channel refresh")
+
+                        self.need_channels_refresh = True
+                        self.last_refresh_time = cur_time
+
                     if self.need_channels_refresh:
                         self.need_channels_refresh = False
                         channels_followed.clear()
