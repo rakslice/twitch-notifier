@@ -204,10 +204,10 @@ class TwitchNotifierMain(object):
             else:
                 assert False, "unknown saved oauth_token length"
             token_age = time.time() - oauth_token_timestamp
-            if token_age > 60 * 60 * 24 * 30:
+            if token_age > 60 * 60 * 24 or saved_scopes != scopes_needed:
                 oauth_token = None
 
-        if oauth_token is not None and saved_scopes == scopes_needed:
+        if oauth_token is not None:
             self._auth_complete_callback(saved_scopes, oauth_token, used_cached_auth=True)
         else:
             browser_auth.do_browser(lambda *args: self._auth_complete_callback(scopes_needed, *args), scopes=scopes_needed, debug=self.options.debug_output)
