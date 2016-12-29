@@ -153,7 +153,7 @@ class OurTwitchNotifierMain(TwitchNotifierMain):
         """:type msg: unicode"""
         assert isinstance(msg, unicode)
         line_item = u"%s: %s" % (datetime.datetime.now(), msg)
-        self.window_impl.list_log.Append(line_item)
+        self.window_impl.list_log.Insert(line_item, 0)
 
     def init_channel_display(self, followed_channel_entries):
         super(OurTwitchNotifierMain, self).init_channel_display(followed_channel_entries)
