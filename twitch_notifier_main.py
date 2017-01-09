@@ -168,7 +168,7 @@ class TwitchNotifierMain(object):
         stream_browser_link = stream["channel"]["url"]
         game = stream["game"]
 
-        if game is None:
+        if game is None or game == "":
             show_info = ""
         else:
             show_info = u"with %s " % stream["game"]
