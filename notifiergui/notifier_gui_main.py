@@ -194,7 +194,7 @@ class MainStatusWindowImpl(MainStatusWindow):
         # d = "channel:\n%s\nstream:\n%s" % (pretty_json(channel), pretty_json(stream))
         # self.label_debug.SetLabel(d.replace("\n", "\r\n"))
 
-        if channel is None:
+        if channel is None or channel["status"] is None:
             self.label_channel_status.SetLabel(u"")
         else:
             self.label_channel_status.SetLabel(channel["status"])
