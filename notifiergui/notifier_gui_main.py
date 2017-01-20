@@ -73,6 +73,8 @@ class MainStatusWindowImpl(MainStatusWindow):
         self.toolbar_icon = wx.TaskBarIcon()
         the_icon = self._get_asset_icon()
 
+        self.SetIcon(the_icon)
+
         self.toolbar_icon.SetIcon(the_icon)
 
         self.notification_icon = the_icon
