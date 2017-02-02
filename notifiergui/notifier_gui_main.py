@@ -84,11 +84,21 @@ class MainStatusWindowImpl(MainStatusWindow):
         self.toolbar_icon.Bind(wx.EVT_TASKBAR_BALLOON_TIMEOUT, self._on_toolbar_balloon_timeout)
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
+        self.button_open_channel.SetDefault()
+
         options = parse_args()
         self.main_obj = OurTwitchNotifierMain(options, self)
         self.main_obj.main_loop_main_window_timer()
 
         self.base_logo_bitmap = self.bitmap_channel_logo.GetBitmap()
+
+    def _on_button_open_channel_click(self, event):
+        online_selection = self.list_online.GetSelection()
+        offline_selection = self.list_offline.GetSelection()
+        if online_selection != -1:
+            self.main_obj.open_site_for_list_entry(True, online_selection)
+        elif offline_selection != -1:
+            self.main_obj.open_site_for_list_entry(False, offline_selection)
 
     def set_timeout(self, time_ms, callback, args=None, kwargs=None):
         if args is None:
@@ -166,6 +176,7 @@ class MainStatusWindowImpl(MainStatusWindow):
         self.main_obj.open_site_for_list_entry(True, event.GetInt())
 
     def clear_info(self):
+        self.button_open_channel.Enable(False)
         # self.label_debug.SetLabel(u"")
         self.clear_stream_info()
 
@@ -183,6 +194,8 @@ class MainStatusWindowImpl(MainStatusWindow):
         start_time = convert_iso_time(created_at)
         elapsed_s = time.time() - start_time
         self.label_uptime.SetLabel(time_desc(elapsed_s))
+
+        self.main_obj.log(u"partner: %s" % stream["channel"]["partner"])
         # self.label_stream_desc.SetLabel(u" ".join(parts))
 
     def clear_stream_info(self):
@@ -195,6 +208,8 @@ class MainStatusWindowImpl(MainStatusWindow):
     def show_info(self, channel, stream):
         # d = "channel:\n%s\nstream:\n%s" % (pretty_json(channel), pretty_json(stream))
         # self.label_debug.SetLabel(d.replace("\n", "\r\n"))
+
+        self.button_open_channel.Enable(True)
 
         if channel is None or channel["status"] is None:
             self.label_channel_status.SetLabel(u"")
